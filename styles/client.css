@@ -1,0 +1,4 @@
+/* remark-dgmo color-mode visibility — override the [data-theme="dark"] selector for .dark-style toggles. */
+.dgmo-dark { display: none; }
+[data-theme="dark"] .dgmo-light { display: none; }
+[data-theme="dark"] .dgmo-dark  { display: block; }
