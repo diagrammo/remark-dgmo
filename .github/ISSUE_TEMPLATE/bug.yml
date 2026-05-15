@@ -1,0 +1,37 @@
+name: Bug report
+description: Report a problem with remark-dgmo
+title: "[Bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Triage hint:** if your symptom looks like one of these, you may be in the wrong repo —
+        - "Diagram looks wrong regardless of host site" → file in [`dgmo`](https://github.com/diagrammo/dgmo/issues)
+        - "`astro build` errors / Astro option not respected" → file in [`astro-dgmo`](https://github.com/diagrammo/astro-dgmo/issues)
+        - "`docusaurus build` errors / preset injection misses a slot" → file in [`docusaurus-plugin-dgmo`](https://github.com/diagrammo/docusaurus-plugin-dgmo/issues)
+        - "Tailwind `.dark` toggle doesn't switch diagrams" → file here (`remark-dgmo`); see README "Custom color-mode selector"
+        We'll re-route mistakes silently — no need to repost.
+  - type: textarea
+    id: symptom
+    attributes:
+      label: What happened?
+      description: Brief description of the actual vs expected behavior.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Minimum reproduction
+      description: A markdown snippet, plus the integration options you used. Smaller is better.
+      render: markdown
+    validations:
+      required: true
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: "remark-dgmo, @diagrammo/dgmo, framework (e.g. astro, docusaurus), Node"
+      placeholder: "remark-dgmo 0.1.0; @diagrammo/dgmo 0.15.2; node 20.10"
+    validations:
+      required: true
