@@ -11,7 +11,10 @@
  * SVGs are emitted with viewBox only (no fixed width/height). Force them
  * to fill their wrapper so light and dark variants render at identical
  * sizes — without this, browsers fall back to the 300x150 UA default and
- * the two themes can disagree depending on host CSS. */
+ * the two themes can disagree depending on host CSS.
+ *
+ * Targets the SVG, NOT its wrapper div — the wrappers' display is what
+ * the color-mode toggle rules above flip, so we mustn't override it. */
 .dgmo-light > svg,
 .dgmo-dark > svg,
 .dgmo-svg > svg {

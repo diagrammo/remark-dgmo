@@ -17,6 +17,7 @@
  */
 
 let clickHandlerBound = false;
+let themeObserverBound = false;
 
 export function bindDgmo(): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
@@ -26,6 +27,28 @@ export function bindDgmo(): void {
     clickHandlerBound = true;
   }
   tightenViewBoxes();
+
+  // Color-mode toggles flip which dual-render wrapper is `display: none`.
+  // The wrapper that was hidden at load couldn't be measured (getBBox
+  // returns 0 on display:none subtrees), so its SVG keeps the full
+  // un-tightened viewBox and looks tiny when it becomes visible. Watch
+  // for the host's color-mode signal flipping and re-tighten then.
+  //
+  // Double-rAF defers the measurement until AFTER the browser has
+  // finished the layout pass that the display-change triggered. Without
+  // it, MutationObserver fires synchronously before layout and getBBox
+  // still returns 0 on the freshly-visible element.
+  if (!themeObserverBound) {
+    const html = document.documentElement;
+    const reTighten = () => {
+      requestAnimationFrame(() => requestAnimationFrame(tightenViewBoxes));
+    };
+    new MutationObserver(reTighten).observe(html, {
+      attributes: true,
+      attributeFilter: ['data-theme', 'class'],
+    });
+    themeObserverBound = true;
+  }
 }
 
 async function handleCopyClick(e: Event): Promise<void> {
@@ -44,9 +67,30 @@ async function handleCopyClick(e: Event): Promise<void> {
 }
 
 function tightenViewBoxes(): void {
-  const SVG_SELECTORS = '.dgmo-svg svg, .dgmo-light svg, .dgmo-dark svg';
-  document.querySelectorAll(SVG_SELECTORS).forEach(node => {
-    const svg = node as SVGSVGElement;
+  const WRAPPER_SELECTORS = '.dgmo-light, .dgmo-dark, .dgmo-svg';
+  document.querySelectorAll(WRAPPER_SELECTORS).forEach(node => {
+    const wrapper = node as HTMLElement;
+    const svg = wrapper.querySelector('svg') as SVGSVGElement | null;
+    if (!svg) return;
+
+    // `getBBox()` returns 0,0,0,0 on elements whose ancestor is `display: none`.
+    // Under dual-render the inactive color-mode wrapper IS display:none at load,
+    // so its SVG would stay un-tightened — and then look small after the user
+    // toggles into it. Set the wrapper to inline-style `display: block`
+    // synchronously, read getBBox, then restore. Modern browsers don't paint
+    // between these synchronous DOM writes, so there's no visible flicker.
+    const computed = window.getComputedStyle(wrapper);
+    const wasHidden = computed.display === 'none';
+    const savedInlineDisplay = wrapper.style.display;
+    if (wasHidden) {
+      wrapper.style.display = 'block';
+      // Force a synchronous layout pass before getBBox so the freshly-
+      // shown element actually has bounds. Without this, some browsers
+      // still report 0,0,0,0 because they batch the display change for
+      // the next frame.
+      void wrapper.offsetHeight;
+    }
+
     try {
       const bbox = (svg as unknown as SVGGraphicsElement).getBBox();
       if (bbox.width > 0 && bbox.height > 0) {
@@ -61,6 +105,8 @@ function tightenViewBoxes(): void {
     } catch {
       // ignore: SVG not yet in the DOM, or getBBox unsupported
     }
+
+    if (wasHidden) wrapper.style.display = savedInlineDisplay;
   });
 }
 
