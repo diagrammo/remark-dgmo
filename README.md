@@ -178,6 +178,21 @@ A -> B
 | `copy` / `noCopy` | Force copy button on/off |
 | `openInEditor` / `noOpenInEditor` | Force editor link on/off |
 
+## Working reference site
+
+For an end-to-end example of `remark-dgmo` running inside a real
+framework, see [`docusaurus-plugin-dgmo`'s `tests/fixture/`](https://github.com/diagrammo/docusaurus-plugin-dgmo/tree/main/tests/fixture)
+— a minimal Docusaurus 3 site that wires this plugin into every preset
+slot and exercises plain, tagged, showcase, and per-block-override
+blocks. The `astro-dgmo` repo has an equivalent Astro 6 fixture at
+[`tests/fixture/`](https://github.com/diagrammo/astro-dgmo/tree/main/tests/fixture).
+
+Both fixtures pin to `link:../..` against the wrapper plugin's source,
+so they're the canonical reference for the smallest correct config —
+including the non-obvious gotchas (Docusaurus's async-function default
+export + `markdown: { format: 'md' }`, Astro's manual `import
+'remark-dgmo/client.css'`).
+
 ## Custom color-mode selector
 
 The shipped `client.css` keys on `[data-theme="dark"]` — the convention used by Docusaurus and Starlight. For Tailwind-style sites that signal dark mode via a `.dark` class on `<html>` (or any other selector), don't import `client.css`. Inline these three rules in your own CSS instead, swapping the selector:
