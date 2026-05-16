@@ -39,15 +39,20 @@
 }
 .dgmo-code { display: block; }
 
-/* === Showcase mode: card + toolbar === */
+/* === Showcase mode: card + toolbar ===
+ * Showcase order is diagram-then-source. The source is wrapped in a
+ * <details> disclosure that's collapsed by default — the <summary>
+ * doubles as the toolbar row at the bottom of the card. */
 .dgmo-card {
   border: 1px solid rgba(127, 127, 127, 0.2);
   border-radius: 0.5em;
   overflow: hidden;
 }
 .dgmo-source-wrap {
-  border-bottom: 1px solid rgba(127, 127, 127, 0.2);
+  border-top: 1px solid rgba(127, 127, 127, 0.2);
 }
+/* Summary is the clickable toolbar. Hide the native disclosure marker
+ * (both spec and webkit pseudo) so our own chevron is the only indicator. */
 .dgmo-toolbar {
   display: flex;
   align-items: center;
@@ -57,7 +62,21 @@
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-size: 0.75em;
   color: rgba(127, 127, 127, 0.95);
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
 }
+.dgmo-toolbar::-webkit-details-marker { display: none; }
+.dgmo-toolbar-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+.dgmo-chevron {
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+details[open] > .dgmo-toolbar .dgmo-chevron { transform: rotate(90deg); }
 .dgmo-toolbar-actions {
   display: flex;
   gap: 0.4em;

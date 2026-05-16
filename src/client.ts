@@ -2,8 +2,13 @@
  * Framework-neutral client-side enhancement for diagrams emitted by
  * `remark-dgmo`:
  *
- *   - Bind a delegated click handler for `button.dgmo-copy` to copy the
- *     source string in `data-dgmo-source` to the clipboard.
+ *   - Bind a delegated click handler for the showcase toolbar buttons:
+ *     `.dgmo-copy` copies the source string in `data-dgmo-source` to the
+ *     clipboard. `.dgmo-open` is an `<a href>` whose default-action
+ *     navigation is preserved — except when it lives inside a `<summary>`
+ *     (the collapsible toolbar case), where we have to manually navigate
+ *     because the same click's `preventDefault()` cancels both the
+ *     summary's toggle AND the anchor's nav.
  *   - Tighten each diagram's `viewBox` to its actual content bounds via
  *     `SVGGraphicsElement.getBBox()`, since SVG-export from the renderer
  *     embeds a generous bounding box.
@@ -23,7 +28,7 @@ export function bindDgmo(): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
   if (!clickHandlerBound) {
-    document.addEventListener('click', handleCopyClick);
+    document.addEventListener('click', handleToolbarBtnClick);
     clickHandlerBound = true;
   }
   tightenViewBoxes();
@@ -51,19 +56,39 @@ export function bindDgmo(): void {
   }
 }
 
-async function handleCopyClick(e: Event): Promise<void> {
+async function handleToolbarBtnClick(e: Event): Promise<void> {
   const target = e.target as Element | null;
   if (!target || typeof target.closest !== 'function') return;
-  const btn = target.closest('button.dgmo-copy') as HTMLElement | null;
+  const btn = target.closest('.dgmo-toolbar-btn') as HTMLElement | null;
   if (!btn) return;
-  const src = btn.dataset.dgmoSource ?? '';
-  try {
-    await navigator.clipboard.writeText(src);
-  } catch {
+
+  // The showcase toolbar IS the <summary> of a <details> disclosure, so a
+  // click on any descendant would also toggle the disclosure unless we
+  // cancel the default action. preventDefault here cancels the summary's
+  // toggle — but it also cancels an anchor's navigation, so we have to
+  // manually re-open the link below when the open-in-editor button is
+  // nested inside a summary.
+  const insideSummary = !!btn.closest('summary');
+  if (insideSummary) e.preventDefault();
+
+  if (btn.matches('button.dgmo-copy')) {
+    const src = btn.dataset.dgmoSource ?? '';
+    try {
+      await navigator.clipboard.writeText(src);
+    } catch {
+      return;
+    }
+    btn.classList.add('dgmo-copy--success');
+    setTimeout(() => btn.classList.remove('dgmo-copy--success'), 1500);
     return;
   }
-  btn.classList.add('dgmo-copy--success');
-  setTimeout(() => btn.classList.remove('dgmo-copy--success'), 1500);
+
+  if (insideSummary && btn.matches('a.dgmo-open')) {
+    const anchor = btn as HTMLAnchorElement;
+    if (anchor.href) {
+      window.open(anchor.href, anchor.target || '_blank', 'noopener,noreferrer');
+    }
+  }
 }
 
 function tightenViewBoxes(): void {

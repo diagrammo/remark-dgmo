@@ -246,45 +246,12 @@ function renderShowcase(
       : `<div class="dgmo-caption">${escapeHtml(title)}</div>`
     : '';
 
-  const sourceHtml = opts.showSource ? renderSource(source) : '';
-
-  const openButton =
-    opts.showOpenInEditor && editorUrl
-      ? `<a href="${escapeAttr(editorUrl)}" target="_blank" rel="noopener noreferrer" class="dgmo-toolbar-btn dgmo-open" aria-label="Open in online editor" title="Open in online editor">
-         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-           <path d="M9.5 2.5h4v4"/>
-           <path d="M13.5 2.5 7 9"/>
-           <path d="M12.5 9.5v3a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1h3"/>
-         </svg>
-       </a>`
-      : '';
-
-  const copyButton = opts.showCopy
-    ? `<button type="button" class="dgmo-toolbar-btn dgmo-copy" aria-label="Copy to clipboard" title="Copy to clipboard" data-dgmo-source="${escapeAttr(source)}">
-         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-           <rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/>
-           <path d="M10.5 5.5V3a1.5 1.5 0 0 0-1.5-1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h2.5"/>
-         </svg>
-       </button>`
-    : '';
-
-  const toolbarActions =
-    openButton || copyButton
-      ? `<div class="dgmo-toolbar-actions">${openButton}${copyButton}</div>`
-      : '';
-
-  const toolbar = opts.showSource
-    ? `<div class="dgmo-toolbar"><span class="dgmo-toolbar-label">dgmo</span>${toolbarActions}</div>`
-    : '';
-
   return (
     `<${Wrapper} class="${escapeAttr(wrapperClass)}">` +
     captionHtml +
     `<div class="${escapeAttr(cardClass)}">` +
-    (opts.showSource
-      ? `<div class="dgmo-source-wrap">${toolbar}<div class="dgmo-source-inner">${sourceHtml}</div></div>`
-      : '') +
     `<div class="${escapeAttr(buildInnerClasses(opts, 'dgmo-svg'))}">${svg}</div>` +
+    renderSourceDisclosure(source, editorUrl, opts) +
     `</div>` +
     `</${Wrapper}>`
   );
@@ -308,7 +275,35 @@ function renderShowcaseDual(
       : `<div class="dgmo-caption">${escapeHtml(title)}</div>`
     : '';
 
-  const sourceHtml = opts.showSource ? renderSource(source) : '';
+  return (
+    `<${Wrapper} class="${escapeAttr(wrapperClass)}">` +
+    captionHtml +
+    `<div class="${escapeAttr(cardClass)}">` +
+    `<div class="${escapeAttr(buildInnerClasses(opts, 'dgmo-light'))}">${lightSvg}</div>` +
+    `<div class="${escapeAttr(buildInnerClasses(opts, 'dgmo-dark'))}">${darkSvg}</div>` +
+    renderSourceDisclosure(source, editorUrl, opts) +
+    `</div>` +
+    `</${Wrapper}>`
+  );
+}
+
+/**
+ * Source listing wrapped in a native <details>/<summary> disclosure, collapsed
+ * by default. The summary doubles as the toolbar row (label + chevron + copy /
+ * open-in-editor buttons). Clicks on the toolbar buttons are stopped from
+ * propagating to the summary in `client.ts`, so they don't also toggle the
+ * disclosure.
+ *
+ * Returns '' when `showSource` is false (matches the prior noSource behavior).
+ */
+function renderSourceDisclosure(
+  source: string,
+  editorUrl: string | undefined,
+  opts: ResolvedOptions
+): string {
+  if (!opts.showSource) return '';
+
+  const sourceHtml = renderSource(source);
 
   const openButton =
     opts.showOpenInEditor && editorUrl
@@ -335,21 +330,13 @@ function renderShowcaseDual(
       ? `<div class="dgmo-toolbar-actions">${openButton}${copyButton}</div>`
       : '';
 
-  const toolbar = opts.showSource
-    ? `<div class="dgmo-toolbar"><span class="dgmo-toolbar-label">dgmo</span>${toolbarActions}</div>`
-    : '';
+  const chevron = `<svg class="dgmo-chevron" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 4 4 4-4 4"/></svg>`;
 
   return (
-    `<${Wrapper} class="${escapeAttr(wrapperClass)}">` +
-    captionHtml +
-    `<div class="${escapeAttr(cardClass)}">` +
-    (opts.showSource
-      ? `<div class="dgmo-source-wrap">${toolbar}<div class="dgmo-source-inner">${sourceHtml}</div></div>`
-      : '') +
-    `<div class="${escapeAttr(buildInnerClasses(opts, 'dgmo-light'))}">${lightSvg}</div>` +
-    `<div class="${escapeAttr(buildInnerClasses(opts, 'dgmo-dark'))}">${darkSvg}</div>` +
-    `</div>` +
-    `</${Wrapper}>`
+    `<details class="dgmo-source-wrap">` +
+    `<summary class="dgmo-toolbar"><span class="dgmo-toolbar-label">${chevron}<span>source</span></span>${toolbarActions}</summary>` +
+    `<div class="dgmo-source-inner">${sourceHtml}</div>` +
+    `</details>`
   );
 }
 
