@@ -153,6 +153,13 @@ remarkDgmo({
   // astro-dgmo v0.3.0 to keep the legacy `astro-dgmo*` class names for one
   // minor cycle of backward compat.
   legacyClassNames: [],
+
+  // Emit MDX-compatible output. Default: false (raw `html` mdast node).
+  // Set to true when the host pipeline routes files through @mdx-js/mdx —
+  // Docusaurus with `markdown.format: 'mdx'`, Astro `.mdx`, Fumadocs, etc.
+  // The plugin then emits an `mdxJsxFlowElement` instead of an `html` node,
+  // so MDX accepts the output without "Cannot handle unknown node `raw`".
+  mdx: false,
 });
 ```
 

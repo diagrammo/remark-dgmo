@@ -85,14 +85,27 @@ export interface DgmoOptions {
    * compatibility. Default: `[]`.
    */
   legacyClassNames?: string[];
+
+  /**
+   * Emit MDX-compatible output. Default: `false` (raw `html` mdast node).
+   *
+   * When `true`, every replaced ```dgmo block becomes an `mdxJsxFlowElement`
+   * (`<div dangerouslySetInnerHTML={{__html: …}} />`) so MDX-format files
+   * accept the output. Use this when the host pipeline routes files through
+   * `@mdx-js/mdx` — Docusaurus with `markdown.format: 'mdx'`, Astro `.mdx`
+   * files, Fumadocs, etc. MDX rejects raw `html` nodes with
+   * `Cannot handle unknown node "raw"`; this option is the fix.
+   */
+  mdx?: boolean;
 }
 
 export type ResolvedOptions = Required<
-  Omit<DgmoOptions, 'showSource' | 'showCopy' | 'showOpenInEditor'>
+  Omit<DgmoOptions, 'showSource' | 'showCopy' | 'showOpenInEditor' | 'mdx'>
 > & {
   showSource: boolean;
   showCopy: boolean;
   showOpenInEditor: boolean;
+  mdx: boolean;
 };
 
 /**
@@ -113,5 +126,6 @@ export function resolveOptions(opts: DgmoOptions = {}): ResolvedOptions {
     wrapper: opts.wrapper ?? 'figure',
     className: opts.className ?? 'dgmo',
     legacyClassNames: opts.legacyClassNames ?? [],
+    mdx: opts.mdx ?? false,
   };
 }

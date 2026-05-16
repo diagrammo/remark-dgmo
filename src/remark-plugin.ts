@@ -2,6 +2,7 @@ import { visit } from 'unist-util-visit';
 import type { Root, Code, Html, Parent } from 'mdast';
 import { renderDgmoBlock, type BlockLocation } from './render-block.js';
 import type { DgmoOptions } from './options.js';
+import { htmlToMdxJsxNode } from './mdx-node.js';
 
 export type RemarkDgmoOptions = DgmoOptions;
 
@@ -74,8 +75,15 @@ export default function remarkDgmo(options: RemarkDgmoOptions = {}) {
     // reversing is sufficient.)
     for (let i = targets.length - 1; i >= 0; i--) {
       const t = targets[i];
-      const html: Html = { type: 'html', value: rendered[i].html };
-      t.parent.children[t.index] = html;
+      // MDX rejects raw `html` nodes ("Cannot handle unknown node `raw`"),
+      // so under `mdx: true` we emit an `mdxJsxFlowElement` (a
+      // `<div dangerouslySetInnerHTML={{__html: …}} />` JSX wrapper) which
+      // the MDX → React compiler accepts. Default stays raw HTML to keep
+      // every existing wrapper (astro, plain remark, remark-html) untouched.
+      const replacement = options.mdx
+        ? htmlToMdxJsxNode(rendered[i].html)
+        : ({ type: 'html', value: rendered[i].html } as Html);
+      t.parent.children[t.index] = replacement as unknown as Html;
     }
   };
 }
