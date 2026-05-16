@@ -1,4 +1,74 @@
-/* remark-dgmo color-mode visibility — override the [data-theme="dark"] selector for .dark-style toggles. */
+/* remark-dgmo — visibility, sizing, and showcase chrome.
+ * Override the `[data-theme="dark"]` selector if your site uses
+ * `.dark` or another convention. */
+
+/* === Color-mode visibility === */
 .dgmo-dark { display: none; }
 [data-theme="dark"] .dgmo-light { display: none; }
 [data-theme="dark"] .dgmo-dark  { display: block; }
+
+/* === Diagram sizing ===
+ * SVGs are emitted with viewBox only (no fixed width/height). Force them
+ * to fill their wrapper so light and dark variants render at identical
+ * sizes — without this, browsers fall back to the 300x150 UA default and
+ * the two themes can disagree depending on host CSS. */
+.dgmo-light > svg,
+.dgmo-dark > svg,
+.dgmo-svg > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-width: 100%;
+}
+
+/* === Showcase mode: source block ===
+ * <pre> is browser-default `white-space: pre`, but Docusaurus and several
+ * other docs frameworks reset that. Force preservation here so the source
+ * keeps its newlines and renders as code. */
+.dgmo-pre {
+  white-space: pre;
+  overflow-x: auto;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.85em;
+  line-height: 1.5;
+  margin: 0;
+  padding: 1em;
+}
+.dgmo-code { display: block; }
+
+/* === Showcase mode: card + toolbar === */
+.dgmo-card {
+  border: 1px solid rgba(127, 127, 127, 0.2);
+  border-radius: 0.5em;
+  overflow: hidden;
+}
+.dgmo-source-wrap {
+  border-bottom: 1px solid rgba(127, 127, 127, 0.2);
+}
+.dgmo-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4em 0.75em;
+  background: rgba(127, 127, 127, 0.07);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.75em;
+  color: rgba(127, 127, 127, 0.95);
+}
+.dgmo-toolbar-actions {
+  display: flex;
+  gap: 0.4em;
+}
+.dgmo-toolbar-btn {
+  background: none;
+  border: 0;
+  padding: 0.25em;
+  color: inherit;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.7;
+  transition: opacity 0.15s ease;
+}
+.dgmo-toolbar-btn:hover { opacity: 1; }
+.dgmo-copy--success { color: #5cba7a; opacity: 1; }
