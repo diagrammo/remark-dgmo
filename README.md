@@ -3,7 +3,7 @@
 Framework-agnostic [remark](https://github.com/remarkjs/remark) plugin that renders [DGMO](https://diagrammo.app) diagrams from `` ```dgmo `` fenced code blocks at build time. Powered by [`@diagrammo/dgmo`](https://www.npmjs.com/package/@diagrammo/dgmo). Zero client JavaScript by default.
 
 ```dgmo
-chart: sequence
+sequence
 Client -POST /login-> API
 API -validate-> Auth
 Auth -JWT-> API
@@ -162,7 +162,7 @@ Append options to the fence info string. Tokens are space-separated; values may 
 
 ````markdown
 ```dgmo showcase title="Login flow" palette=catppuccin theme=light
-chart: sequence
+sequence
 A -> B
 ```
 ````
