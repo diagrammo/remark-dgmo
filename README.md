@@ -93,7 +93,38 @@ export default config;
 
 The plugin registers `client.css` + `client.js` via `getClientModules()`. You still wire `remarkPlugins` into each preset slot manually — Docusaurus's plugin API has no hook to auto-inject into a sibling preset.
 
-### Pattern 3: Vanilla unified pipeline
+### Pattern 3: Fumadocs (Next.js app router)
+
+Use [`fumadocs-dgmo`](https://www.npmjs.com/package/fumadocs-dgmo) — it wraps `mdxOptions` for `fumadocs-mdx`, ships a `.dark`-rewritten stylesheet (Fumadocs UI's `next-themes` default), and provides a Client Component that re-binds on every soft navigation.
+
+```bash
+pnpm add fumadocs-dgmo @diagrammo/dgmo
+```
+
+```ts
+// source.config.ts
+import { defineConfig } from 'fumadocs-mdx/config';
+import { withDgmo } from 'fumadocs-dgmo/config';
+
+export default defineConfig({
+  mdxOptions: withDgmo(),
+});
+```
+
+```css
+/* app/global.css */
+@import 'fumadocs-ui/css/preset.css';
+@import 'fumadocs-dgmo/client.css';
+```
+
+```tsx
+// app/layout.tsx — add <DgmoClient /> inside <RootProvider>
+import { DgmoClient } from 'fumadocs-dgmo/client';
+// …
+<RootProvider>{children}<DgmoClient /></RootProvider>
+```
+
+### Pattern 4: Vanilla unified pipeline
 
 ```ts
 import { unified } from 'unified';
@@ -192,17 +223,20 @@ framework, see [`docusaurus-plugin-dgmo`'s `tests/fixture/`](https://github.com/
 — a minimal Docusaurus 3 site that wires this plugin into every preset
 slot and exercises plain, tagged, showcase, and per-block-override
 blocks. The `astro-dgmo` repo has an equivalent Astro 6 fixture at
-[`tests/fixture/`](https://github.com/diagrammo/astro-dgmo/tree/main/tests/fixture).
+[`tests/fixture/`](https://github.com/diagrammo/astro-dgmo/tree/main/tests/fixture);
+the `fumadocs-dgmo` repo has a Next.js app-router fixture at
+[`tests/fixture/`](https://github.com/diagrammo/fumadocs-dgmo/tree/main/tests/fixture).
 
-Both fixtures pin to `link:../..` against the wrapper plugin's source,
-so they're the canonical reference for the smallest correct config —
-including the non-obvious gotchas (Docusaurus's async-function default
-export + `markdown: { format: 'md' }`, Astro's manual `import
-'remark-dgmo/client.css'`).
+All three fixtures pin to `link:../..` against the wrapper plugin's
+source, so they're the canonical reference for the smallest correct
+config — including the non-obvious gotchas (Docusaurus's async-function
+default export + `markdown: { format: 'md' }`, Astro's manual `import
+'remark-dgmo/client.css'`, Fumadocs's `mdx: true` requirement and
+`html.dark` selector mapping).
 
 ## Custom color-mode selector
 
-The shipped `client.css` keys on `[data-theme="dark"]` — the convention used by Docusaurus and Starlight. For Tailwind-style sites that signal dark mode via a `.dark` class on `<html>` (or any other selector), don't import `client.css`. Inline these three rules in your own CSS instead, swapping the selector:
+The shipped `client.css` keys on `[data-theme="dark"]` — the convention used by Docusaurus and Starlight. For Tailwind-style sites that signal dark mode via a `.dark` class on `<html>` (which is also what Fumadocs UI's `next-themes` default produces), don't import `client.css` directly — `fumadocs-dgmo/client.css` ships a build-time rewrite for that case. For any other custom selector, inline these three rules in your own CSS instead, swapping the selector:
 
 ```css
 .dgmo-dark { display: none; }

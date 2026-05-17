@@ -1,6 +1,6 @@
 # Wrapper repo conventions
 
-This document defines how a framework-specific wrapper for `remark-dgmo` is structured. It's the rulebook for `astro-dgmo`, `docusaurus-plugin-dgmo`, and any future wrapper (Fumadocs, Nuxt Content, Eleventy, …). Reading it back-to-back with one of the two existing wrappers should make a new wrapper a half-day's work, not a fishing trip.
+This document defines how a framework-specific wrapper for `remark-dgmo` is structured. It's the rulebook for `astro-dgmo`, `docusaurus-plugin-dgmo`, `fumadocs-dgmo`, and any future wrapper (Nuxt Content, Eleventy, VitePress, …). Reading it back-to-back with one of the existing wrappers should make a new wrapper a half-day's work, not a fishing trip.
 
 If your wrapper deviates from this doc, write down why in the wrapper's README — drift is fine when it has a reason, surprise is not.
 
@@ -215,7 +215,7 @@ The fixture's `pie` block stays put when the theme toggle fires — that's the "
 |---|---|---|
 | **Astro** | Document `import 'remark-dgmo/client.css'` in a global layout's frontmatter. Astro's Vite pipeline inlines it. | `<style>…</style>` inside `<head>` |
 | **Docusaurus** | Wrapper's `getClientModules()` returns the CSS path; Docusaurus's webpack config emits a separate stylesheet file. | `<link rel="stylesheet" href="…remark-dgmo…client.css">` |
-| **Next.js / Fumadocs** | (Likely) document `import 'remark-dgmo/client.css'` in `app/layout.tsx`. Next.js inlines into the page bundle. | `<style>` inside `<head>` (estimated; verify when implementing) |
+| **Fumadocs (Next.js app router)** | Wrapper ships its own `fumadocs-dgmo/client.css` — a build-time copy of upstream with `[data-theme="dark"]` rewritten to `html.dark` (Fumadocs UI's `next-themes` default). User `@import`s it in `app/global.css`; Next's CSS pipeline extracts it. | `<link rel="stylesheet">` in `<head>` pointing at `_next/static/css/*.css` |
 
 The fixture-build assertion script must check the host-appropriate form. See `astro-dgmo/scripts/assert-build-output.mjs` (regex on inline `<style>`) and `docusaurus-plugin-dgmo/scripts/assert-build-output.mjs` (regex on `<link>` href).
 
@@ -225,7 +225,7 @@ The fixture-build assertion script must check the host-appropriate form. See `as
 
 - **Astro**: `injectScript('page', readFileSync(remark-dgmo/client.js))` inlines the bytes into every page. The script self-attaches a `MutationObserver` on `<html>` and runs once on `DOMContentLoaded`.
 - **Docusaurus**: wrapper ships `docusaurus-client.ts` (a tiny file in the wrapper itself, not in `remark-dgmo`) that imports `bindDgmo` and re-exports it as `onRouteDidUpdate` — the symbol Docusaurus calls on every SPA route change.
-- **Next.js**: (likely) a `<Script strategy="afterInteractive">` in `app/layout.tsx` that calls `bindDgmo()`, plus a route-change listener if Next's app-router doesn't already re-fire `DOMContentLoaded` semantics. Verify when implementing.
+- **Fumadocs (Next.js app router)**: wrapper ships `fumadocs-client.tsx` (a `'use client'` React component, kept in the wrapper, not in `remark-dgmo`) that calls `bindDgmo()` inside a `useEffect` keyed on `usePathname()`. Mounted once inside `<RootProvider>` in `app/layout.tsx`. Next's app router does NOT refire `DOMContentLoaded` semantics on soft navigation, so the explicit pathname dep is what keeps showcase-mode buttons + viewBox tightening alive after the first SPA transition. `<Script strategy="afterInteractive">` doesn't work here because it fires once per hard load only.
 
 Wrappers are responsible for keeping host-specific symbols (`onRouteDidUpdate`, `Script`, `IntegrationHook`) out of `remark-dgmo`'s code.
 
