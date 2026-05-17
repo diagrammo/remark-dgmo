@@ -1,6 +1,6 @@
 {
   "name": "remark-dgmo",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "Remark plugin to render DGMO diagrams from fenced code blocks at build time. Framework-agnostic core shared by astro-dgmo, docusaurus-plugin-dgmo, and any unified pipeline.",
   "license": "MIT",
   "repository": {

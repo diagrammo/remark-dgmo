@@ -13,6 +13,10 @@ describe('mdx: true output (AC-MDX1)', () => {
     expect(node.attributes[0].name).toBe('dangerouslySetInnerHTML');
 
     const expr = node.attributes[0].value;
+    // `value: null` is the bare-prop form (used by the suppressHydrationWarning
+    // attribute on the same wrapper); dangerouslySetInnerHTML always has an
+    // expression value, so narrow before reading subfields.
+    if (expr === null) throw new Error('expected value expression, got null');
     expect(expr.type).toBe('mdxJsxAttributeValueExpression');
     expect(expr.value).toContain('__html');
     expect(expr.data.estree.type).toBe('Program');
