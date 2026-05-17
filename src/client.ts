@@ -131,7 +131,18 @@ function tightenViewBoxes(): void {
       // ignore: SVG not yet in the DOM, or getBBox unsupported
     }
 
-    if (wasHidden) wrapper.style.display = savedInlineDisplay;
+    if (wasHidden) {
+      wrapper.style.display = savedInlineDisplay;
+      // Clearing the only inline property leaves `style=""` on the
+      // element in Chrome/Safari. React 19's post-hydration check reads
+      // that empty attribute as a server-vs-client mismatch on the
+      // wrapper div (the wrapper is React-owned; only its `innerHTML`
+      // is dangerouslySetInnerHTML). Drop the empty attribute so the
+      // wrapper round-trips back to its SSR shape.
+      if (savedInlineDisplay === '' && wrapper.getAttribute('style') === '') {
+        wrapper.removeAttribute('style');
+      }
+    }
   });
 }
 

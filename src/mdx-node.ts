@@ -26,7 +26,8 @@ interface MdxJsxAttributeValueExpression {
 interface MdxJsxAttribute {
   type: 'mdxJsxAttribute';
   name: string;
-  value: MdxJsxAttributeValueExpression;
+  // `null` is the bare-prop form: `<div foo>` rather than `<div foo="…">`.
+  value: MdxJsxAttributeValueExpression | null;
 }
 
 export interface MdxJsxFlowElement {
@@ -65,6 +66,19 @@ export function htmlToMdxJsxNode(html: string): MdxJsxFlowElement {
           value: `{__html: ${JSON.stringify(html)}}`,
           data: { estree: program },
         },
+      },
+      // Boolean attribute — `<div suppressHydrationWarning>`. The
+      // `bindDgmo()` client script intentionally mutates the SSR HTML
+      // (tightens each <svg>'s viewBox to real getBBox() bounds after
+      // layout). React 19's reconciler walks into dangerouslySetInnerHTML
+      // subtrees during hydration and would otherwise flag the post-mount
+      // viewBox rewrite as a server-vs-client attribute mismatch. The
+      // suppression is scoped to this wrapper only.
+      // mdxJsxAttribute with `value: null` compiles to the bare-prop form.
+      {
+        type: 'mdxJsxAttribute',
+        name: 'suppressHydrationWarning',
+        value: null,
       },
     ],
     children: [],
