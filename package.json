@@ -59,7 +59,7 @@
     "postbuild": "test -f dist/client.css && test -f dist/client.js",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "test:watch": "vitest",
     "prepublishOnly": "pnpm build && pnpm test"
   },
@@ -79,6 +79,7 @@
     "@types/estree": "^1.0.8",
     "@types/mdast": "^4.0.4",
     "@types/node": "^22.10.0",
+    "@vitest/coverage-v8": "^4.1.6",
     "postcss": "^8.4.49",
     "tsup": "^8.5.1",
     "typescript": "^6.0.2",
