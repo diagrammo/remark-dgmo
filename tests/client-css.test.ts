@@ -26,10 +26,11 @@ describe('client.css (AC-CM2 — required rules)', () => {
     decls: Record<string, string>;
   }> {
     const root = postcss.parse(css);
-    const rules: Array<{ selector: string; decls: Record<string, string> }> = [];
-    root.walkRules(rule => {
+    const rules: Array<{ selector: string; decls: Record<string, string> }> =
+      [];
+    root.walkRules((rule) => {
       const decls: Record<string, string> = {};
-      rule.walkDecls(d => {
+      rule.walkDecls((d) => {
         decls[d.prop] = d.value;
       });
       rules.push({ selector: rule.selector, decls });
@@ -68,7 +69,7 @@ describe('client.css (AC-CM2 — required rules)', () => {
   it('contains an SVG sizing rule for the dgmo wrappers', () => {
     const rules = collectRules();
     const sizingRule = rules.find(
-      r =>
+      (r) =>
         r.selector.includes('.dgmo-light') &&
         r.selector.includes('.dgmo-dark') &&
         r.selector.includes('svg')
@@ -81,7 +82,7 @@ describe('client.css (AC-CM2 — required rules)', () => {
   // newlines and renders as flowed text under several host frameworks.
   it('contains a .dgmo-pre rule that preserves whitespace', () => {
     const rules = collectRules();
-    const preRule = rules.find(r => r.selector === '.dgmo-pre');
+    const preRule = rules.find((r) => r.selector === '.dgmo-pre');
     expect(preRule).toBeDefined();
     expect(preRule?.decls['white-space']).toBe('pre');
   });

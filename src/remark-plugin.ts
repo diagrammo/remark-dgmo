@@ -56,13 +56,13 @@ export default function remarkDgmo(options: RemarkDgmoOptions = {}) {
     if (targets.length === 0) return;
 
     const rendered = await Promise.all(
-      targets.map(t =>
+      targets.map((t) =>
         renderDgmoBlock(
           t.payload.source,
           t.payload.meta,
           options,
           t.payload.location
-        ).catch(err => ({
+        ).catch((err) => ({
           html: errorHtml(err, t.payload.source, options),
           diagnostics: [],
         }))
@@ -95,10 +95,10 @@ function errorHtml(
 ): string {
   const msg =
     err instanceof Error ? err.message : 'Failed to render dgmo block.';
-  const safeMsg = msg.replace(/[<>&]/g, ch =>
+  const safeMsg = msg.replace(/[<>&]/g, (ch) =>
     ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : '&amp;'
   );
-  const safeSrc = source.replace(/[<>&]/g, ch =>
+  const safeSrc = source.replace(/[<>&]/g, (ch) =>
     ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : '&amp;'
   );
   const baseClass = options.className ?? 'dgmo';

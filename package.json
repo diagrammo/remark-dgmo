@@ -61,6 +61,11 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",
     "test:watch": "vitest",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check:deadcode": "knip",
     "prepublishOnly": "pnpm build && pnpm test"
   },
   "peerDependencies": {
@@ -75,14 +80,19 @@
   },
   "devDependencies": {
     "@diagrammo/dgmo": "^0.15.0",
+    "@eslint/js": "^10.0.1",
     "@mdx-js/mdx": "^3.1.0",
     "@types/estree": "^1.0.8",
     "@types/mdast": "^4.0.4",
     "@types/node": "^22.10.0",
     "@vitest/coverage-v8": "^4.1.6",
+    "eslint": "^10.4.0",
+    "knip": "^6.14.1",
     "postcss": "^8.4.49",
+    "prettier": "^3.8.3",
     "tsup": "^8.5.1",
     "typescript": "^6.0.2",
+    "typescript-eslint": "^8.59.3",
     "vitest": "^4.1.4"
   }
 }

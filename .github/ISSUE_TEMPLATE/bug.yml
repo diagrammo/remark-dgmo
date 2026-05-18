@@ -1,7 +1,7 @@
 name: Bug report
 description: Report a problem with remark-dgmo
-title: "[Bug] "
-labels: ["bug"]
+title: '[Bug] '
+labels: ['bug']
 body:
   - type: markdown
     attributes:
@@ -31,7 +31,7 @@ body:
     id: versions
     attributes:
       label: Versions
-      description: "remark-dgmo, @diagrammo/dgmo, framework (e.g. astro, docusaurus), Node"
-      placeholder: "remark-dgmo 0.1.0; @diagrammo/dgmo 0.15.2; node 20.10"
+      description: 'remark-dgmo, @diagrammo/dgmo, framework (e.g. astro, docusaurus), Node'
+      placeholder: 'remark-dgmo 0.1.0; @diagrammo/dgmo 0.15.2; node 20.10'
     validations:
       required: true

@@ -7,7 +7,9 @@ B -> C`;
 
 describe('renderDgmoBlock (single-render path, colorMode: light)', () => {
   it('renders simple diagram mode by default', async () => {
-    const { html } = await renderDgmoBlock(SAMPLE, null, { colorMode: 'light' });
+    const { html } = await renderDgmoBlock(SAMPLE, null, {
+      colorMode: 'light',
+    });
     expect(html).toContain('dgmo--diagram');
     expect(html).toContain('<svg');
     expect(html).not.toContain('dgmo-pre');

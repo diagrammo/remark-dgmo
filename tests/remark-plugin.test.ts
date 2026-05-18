@@ -7,7 +7,7 @@ function buildTree(
 ): Root {
   return {
     type: 'root',
-    children: blocks.map(b => ({
+    children: blocks.map((b) => ({
       type: 'code',
       lang: b.lang,
       meta: b.meta ?? null,
@@ -19,7 +19,9 @@ function buildTree(
 describe('remarkDgmo plugin', () => {
   it('replaces ```dgmo blocks with html nodes', async () => {
     const transform = remarkDgmo({ colorMode: 'light' });
-    const tree = buildTree([{ lang: 'dgmo', value: 'chart: sequence\nA -> B' }]);
+    const tree = buildTree([
+      { lang: 'dgmo', value: 'chart: sequence\nA -> B' },
+    ]);
     await transform(tree);
     const node = tree.children[0] as { type: string; value: string };
     expect(node.type).toBe('html');
@@ -51,7 +53,9 @@ describe('remarkDgmo plugin', () => {
 
   it('honors integration-level options', async () => {
     const transform = remarkDgmo({ mode: 'showcase', colorMode: 'light' });
-    const tree = buildTree([{ lang: 'dgmo', value: 'chart: sequence\nA -> B' }]);
+    const tree = buildTree([
+      { lang: 'dgmo', value: 'chart: sequence\nA -> B' },
+    ]);
     await transform(tree);
     const node = tree.children[0] as { value: string };
     expect(node.value).toContain('dgmo--showcase');
@@ -72,11 +76,26 @@ describe('remarkDgmo plugin', () => {
     const tree: Root = {
       type: 'root',
       children: [
-        { type: 'code', lang: 'dgmo', meta: null, value: 'chart: sequence\nA -> B' },
+        {
+          type: 'code',
+          lang: 'dgmo',
+          meta: null,
+          value: 'chart: sequence\nA -> B',
+        },
         para,
-        { type: 'code', lang: 'dgmo', meta: null, value: 'chart: sequence\nC -> D' },
+        {
+          type: 'code',
+          lang: 'dgmo',
+          meta: null,
+          value: 'chart: sequence\nC -> D',
+        },
         heading,
-        { type: 'code', lang: 'dgmo', meta: null, value: 'chart: sequence\nE -> F' },
+        {
+          type: 'code',
+          lang: 'dgmo',
+          meta: null,
+          value: 'chart: sequence\nE -> F',
+        },
       ],
     };
     await transform(tree);

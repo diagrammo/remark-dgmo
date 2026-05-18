@@ -7,9 +7,9 @@ const HTML_ENTITIES: Record<string, string> = {
 };
 
 export function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, ch => HTML_ENTITIES[ch]);
+  return s.replace(/[&<>"']/g, (ch) => HTML_ENTITIES[ch]);
 }
 
 export function escapeAttr(s: string): string {
-  return s.replace(/[&<>"']/g, ch => HTML_ENTITIES[ch]);
+  return s.replace(/[&<>"']/g, (ch) => HTML_ENTITIES[ch]);
 }

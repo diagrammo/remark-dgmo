@@ -70,7 +70,7 @@ Sections that don't add information for your host's users (e.g., manual Configur
 Hosts that take a config object expose a one-liner helper. Two existing flavors:
 
 - **Docusaurus**: `defineConfig(config, options?)` returns `Promise<Config>`. Auto-imports the ESM-only remark plugin, sets `markdown.format = 'md'`, adds itself to `plugins[]`, prepends `remarkDgmo` into every classic preset slot and any standalone `@docusaurus/plugin-content-*` entry. Idempotent.
-- **Astro**: no separate helper — the integration *is* the helper. `integrations: [dgmo(options?)]` is the one-line install.
+- **Astro**: no separate helper — the integration _is_ the helper. `integrations: [dgmo(options?)]` is the one-line install.
 
 When you build a new wrapper:
 
@@ -85,9 +85,9 @@ Every wrapper's `exports` field must include at least:
 
 ```json
 {
-  ".": "./dist/index.js",            // main host-shaped export (integration / plugin factory)
-  "./remark": "./dist/remark.js",    // re-export of remark-dgmo for power users
-  "./config": "./dist/config.js"     // defineConfig / withDgmo (omit if N/A)
+  ".": "./dist/index.js", // main host-shaped export (integration / plugin factory)
+  "./remark": "./dist/remark.js", // re-export of remark-dgmo for power users
+  "./config": "./dist/config.js" // defineConfig / withDgmo (omit if N/A)
 }
 ```
 
@@ -159,7 +159,8 @@ sequence
 Browser -GET /-> Server
 Server -200 OK-> Browser
 ```
-*Shape 1 — plain block under default `colorMode: 'auto'`. Tests dual-render emission.*
+
+_Shape 1 — plain block under default `colorMode: 'auto'`. Tests dual-render emission._
 
 ```dgmo
 sequence Treasure Hunt App
@@ -182,7 +183,8 @@ MapDB -rows-> API
 API -200 OK-> WebApp
 WebApp -render markers-> User
 ```
-*Shape 2 — `tag` block with explicit colors. Tests palette color resolution under both light and dark modes.*
+
+_Shape 2 — `tag` block with explicit colors. Tests palette color resolution under both light and dark modes._
 
 ````dgmo
 ```dgmo showcase title="Login flow"
@@ -193,7 +195,8 @@ Auth -JWT-> API
 API -200 OK-> Client
 ```
 ````
-*Shape 3 — showcase mode. Tests source listing, copy button, open-in-editor link, caption rendering.*
+
+_Shape 3 — showcase mode. Tests source listing, copy button, open-in-editor link, caption rendering._
 
 ````dgmo
 ```dgmo palette=catppuccin colorMode=light
@@ -203,7 +206,8 @@ Python       30
 Rust         25
 ```
 ````
-*Shape 4 — per-block override. Tests fence-meta parsing, single-render path, palette override.*
+
+_Shape 4 — per-block override. Tests fence-meta parsing, single-render path, palette override._
 
 The fixture's `pie` block stays put when the theme toggle fires — that's the "no-toggle-on-locked-mode" sanity check.
 
@@ -211,10 +215,10 @@ The fixture's `pie` block stays put when the theme toggle fires — that's the "
 
 `remark-dgmo/client.css` contains three rules that gate visibility of the light/dark wrappers via `[data-theme="dark"]`. How the wrapper gets that CSS to the browser depends on the host:
 
-| Host | Strategy | Result in `<head>` |
-|---|---|---|
-| **Astro** | Document `import 'remark-dgmo/client.css'` in a global layout's frontmatter. Astro's Vite pipeline inlines it. | `<style>…</style>` inside `<head>` |
-| **Docusaurus** | Wrapper's `getClientModules()` returns the CSS path; Docusaurus's webpack config emits a separate stylesheet file. | `<link rel="stylesheet" href="…remark-dgmo…client.css">` |
+| Host                              | Strategy                                                                                                                                                                                                                                             | Result in `<head>`                                                         |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| **Astro**                         | Document `import 'remark-dgmo/client.css'` in a global layout's frontmatter. Astro's Vite pipeline inlines it.                                                                                                                                       | `<style>…</style>` inside `<head>`                                         |
+| **Docusaurus**                    | Wrapper's `getClientModules()` returns the CSS path; Docusaurus's webpack config emits a separate stylesheet file.                                                                                                                                   | `<link rel="stylesheet" href="…remark-dgmo…client.css">`                   |
 | **Fumadocs (Next.js app router)** | Wrapper ships its own `fumadocs-dgmo/client.css` — a build-time copy of upstream with `[data-theme="dark"]` rewritten to `html.dark` (Fumadocs UI's `next-themes` default). User `@import`s it in `app/global.css`; Next's CSS pipeline extracts it. | `<link rel="stylesheet">` in `<head>` pointing at `_next/static/css/*.css` |
 
 The fixture-build assertion script must check the host-appropriate form. See `astro-dgmo/scripts/assert-build-output.mjs` (regex on inline `<style>`) and `docusaurus-plugin-dgmo/scripts/assert-build-output.mjs` (regex on `<link>` href).
@@ -236,9 +240,9 @@ Wrappers are responsible for keeping host-specific symbols (`onRouteDidUpdate`, 
 ```yaml
 - pnpm install --frozen-lockfile
 - pnpm typecheck
-- pnpm test           # unit
+- pnpm test # unit
 - pnpm build
-- pnpm test:e2e       # fixture build + assert-build-output.mjs
+- pnpm test:e2e # fixture build + assert-build-output.mjs
 ```
 
 Disable `test:e2e` only when the host's static build is broken upstream. Document the reason inline in the workflow with the exact error trace.
@@ -251,7 +255,7 @@ Disable `test:e2e` only when the host's static build is broken upstream. Documen
     grep for `file:`/`link:` deps on remark-dgmo → fail
     grep for `pnpm.overrides` key in package.json → fail
 - pnpm install / typecheck / test / build
-- npm publish --access public --provenance     # Trusted Publishers via OIDC
+- npm publish --access public --provenance # Trusted Publishers via OIDC
 - Wait for npm registry to surface the new version (6× retry, 10s sleep)
 - Create GitHub release with auto-generated notes
 ```

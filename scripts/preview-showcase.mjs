@@ -15,10 +15,7 @@ const clientCss = readFileSync(
   resolve(__dirname, '../dist/client.css'),
   'utf8'
 );
-const clientJs = readFileSync(
-  resolve(__dirname, '../dist/client.js'),
-  'utf8'
-);
+const clientJs = readFileSync(resolve(__dirname, '../dist/client.js'), 'utf8');
 
 // DGMO syntax pulled from dgmo-content/examples/ — chart-type declarations
 // take no colons, participants are declared as "X is an actor / a service",
@@ -51,8 +48,10 @@ Cooks & Surgeons  5`,
 ];
 
 const rendered = await Promise.all(
-  blocks.map(b =>
-    renderDgmoBlock(b.source, b.meta, { colorMode: 'light' }).then(r => r.html)
+  blocks.map((b) =>
+    renderDgmoBlock(b.source, b.meta, { colorMode: 'light' }).then(
+      (r) => r.html
+    )
   )
 );
 

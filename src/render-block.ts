@@ -51,8 +51,7 @@ export async function renderDgmoBlock(
     palette: block.palette ?? base.palette,
     theme: block.theme ?? base.theme,
     colorMode: block.colorMode ?? base.colorMode,
-    showSource:
-      block.showSource ?? (block.mode ? showcase : base.showSource),
+    showSource: block.showSource ?? (block.mode ? showcase : base.showSource),
     showCopy: block.showCopy ?? (block.mode ? showcase : base.showCopy),
     showOpenInEditor:
       block.showOpenInEditor ?? (block.mode ? showcase : base.showOpenInEditor),
@@ -82,7 +81,14 @@ export async function renderDgmoBlock(
 
     const html =
       opts.mode === 'showcase'
-        ? renderShowcaseDual(trimmed, lightSvg, darkSvg, editorUrl, opts, block.title)
+        ? renderShowcaseDual(
+            trimmed,
+            lightSvg,
+            darkSvg,
+            editorUrl,
+            opts,
+            block.title
+          )
         : renderSimpleDual(lightSvg, darkSvg, opts, block.title);
 
     return { html, diagnostics: allDiagnostics };
@@ -115,7 +121,8 @@ export async function renderDgmoBlock(
 
 function locationSuffix(location: BlockLocation | undefined): string {
   if (!location) return '';
-  if (location.path && location.line) return ` at ${location.path}:${location.line}`;
+  if (location.path && location.line)
+    return ` at ${location.path}:${location.line}`;
   if (location.line) return ` at line ${location.line}`;
   return '';
 }
@@ -124,7 +131,7 @@ function resolvePaletteWithWarning(
   name: string,
   location: BlockLocation | undefined
 ): PaletteConfig {
-  const found = Object.values(palettes).find(p => p.id === name);
+  const found = Object.values(palettes).find((p) => p.id === name);
   if (!found) {
     // eslint-disable-next-line no-console
     console.warn(
@@ -343,13 +350,14 @@ function renderSourceDisclosure(
 function renderSource(source: string): string {
   const tokens = highlightDgmo(source);
   const inner = tokens
-    .map(t => {
+    .map((t) => {
       const styles = NORD_ROLE_STYLES[t.role];
       const text = escapeHtml(t.text);
       if (!styles || Object.keys(styles).length === 0) return text;
       const styleStr = Object.entries(styles)
         .map(
-          ([k, v]) => `${k.replace(/[A-Z]/g, m => '-' + m.toLowerCase())}:${v}`
+          ([k, v]) =>
+            `${k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())}:${v}`
         )
         .join(';');
       return `<span style="${escapeAttr(styleStr)}">${text}</span>`;

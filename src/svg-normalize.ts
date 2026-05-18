@@ -146,7 +146,9 @@ function computeBBox(
   }
 
   // <polygon points="x,y x,y ..."> and <polyline>
-  for (const m of svg.matchAll(/<(?:polygon|polyline)\b[^>]*?\bpoints="([^"]+)"/g)) {
+  for (const m of svg.matchAll(
+    /<(?:polygon|polyline)\b[^>]*?\bpoints="([^"]+)"/g
+  )) {
     const nums = m[1].match(/-?\d+(?:\.\d+)?/g);
     if (!nums) continue;
     for (let i = 0; i + 1 < nums.length; i += 2) {

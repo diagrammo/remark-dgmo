@@ -3,9 +3,15 @@
  * `.dark` or another convention. */
 
 /* === Color-mode visibility === */
-.dgmo-dark { display: none; }
-[data-theme="dark"] .dgmo-light { display: none; }
-[data-theme="dark"] .dgmo-dark  { display: block; }
+.dgmo-dark {
+  display: none;
+}
+[data-theme="dark"] .dgmo-light {
+  display: none;
+}
+[data-theme="dark"] .dgmo-dark {
+  display: block;
+}
 
 /* === Diagram sizing ===
  * SVGs are emitted with viewBox only (no fixed width/height). Force them
@@ -37,7 +43,9 @@
   margin: 0;
   padding: 1em;
 }
-.dgmo-code { display: block; }
+.dgmo-code {
+  display: block;
+}
 
 /* === Showcase mode: card + toolbar ===
  * Showcase order is diagram-then-source. The source is wrapped in a
@@ -66,7 +74,9 @@
   list-style: none;
   user-select: none;
 }
-.dgmo-toolbar::-webkit-details-marker { display: none; }
+.dgmo-toolbar::-webkit-details-marker {
+  display: none;
+}
 .dgmo-toolbar-label {
   display: inline-flex;
   align-items: center;
@@ -76,7 +86,9 @@
   transition: transform 0.15s ease;
   flex-shrink: 0;
 }
-details[open] > .dgmo-toolbar .dgmo-chevron { transform: rotate(90deg); }
+details[open] > .dgmo-toolbar .dgmo-chevron {
+  transform: rotate(90deg);
+}
 .dgmo-toolbar-actions {
   display: flex;
   gap: 0.4em;
@@ -92,5 +104,10 @@ details[open] > .dgmo-toolbar .dgmo-chevron { transform: rotate(90deg); }
   opacity: 0.7;
   transition: opacity 0.15s ease;
 }
-.dgmo-toolbar-btn:hover { opacity: 1; }
-.dgmo-copy--success { color: #5cba7a; opacity: 1; }
+.dgmo-toolbar-btn:hover {
+  opacity: 1;
+}
+.dgmo-copy--success {
+  color: #5cba7a;
+  opacity: 1;
+}

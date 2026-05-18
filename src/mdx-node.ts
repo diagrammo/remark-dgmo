@@ -84,4 +84,3 @@ export function htmlToMdxJsxNode(html: string): MdxJsxFlowElement {
     children: [],
   };
 }
-

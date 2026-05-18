@@ -15,14 +15,10 @@ describe('palette fallback', () => {
 
   // AC-PF1: unregistered palette name → warn + nord fallback
   it('warns and falls back to nord when palette is not registered (AC-PF1)', async () => {
-    await renderDgmoBlock(
-      SAMPLE,
-      null,
-      {
-        palette: 'totally-not-a-real-palette',
-        colorMode: 'light',
-      }
-    );
+    await renderDgmoBlock(SAMPLE, null, {
+      palette: 'totally-not-a-real-palette',
+      colorMode: 'light',
+    });
     expect(warnSpy).toHaveBeenCalledOnce();
     const msg = String(warnSpy.mock.calls[0][0]);
     expect(msg).toMatch(
@@ -71,8 +67,8 @@ describe('palette fallback', () => {
       palette: 'fake-light-only',
       colorMode: 'auto',
     });
-    const messages: string[] = warnSpy.mock.calls.map(
-      (c: unknown[]) => String(c[0])
+    const messages: string[] = warnSpy.mock.calls.map((c: unknown[]) =>
+      String(c[0])
     );
     expect(
       messages.some((m: string) =>

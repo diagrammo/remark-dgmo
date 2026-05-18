@@ -86,14 +86,18 @@ async function handleToolbarBtnClick(e: Event): Promise<void> {
   if (insideSummary && btn.matches('a.dgmo-open')) {
     const anchor = btn as HTMLAnchorElement;
     if (anchor.href) {
-      window.open(anchor.href, anchor.target || '_blank', 'noopener,noreferrer');
+      window.open(
+        anchor.href,
+        anchor.target || '_blank',
+        'noopener,noreferrer'
+      );
     }
   }
 }
 
 function tightenViewBoxes(): void {
   const WRAPPER_SELECTORS = '.dgmo-light, .dgmo-dark, .dgmo-svg';
-  document.querySelectorAll(WRAPPER_SELECTORS).forEach(node => {
+  document.querySelectorAll(WRAPPER_SELECTORS).forEach((node) => {
     const wrapper = node as HTMLElement;
     const svg = wrapper.querySelector('svg') as SVGSVGElement | null;
     if (!svg) return;

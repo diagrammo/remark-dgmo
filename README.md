@@ -1,6 +1,6 @@
 # remark-dgmo
 
-Framework-agnostic [remark](https://github.com/remarkjs/remark) plugin that renders [DGMO](https://diagrammo.app) diagrams from `` ```dgmo `` fenced code blocks at build time. Powered by [`@diagrammo/dgmo`](https://www.npmjs.com/package/@diagrammo/dgmo). Zero client JavaScript by default.
+Framework-agnostic [remark](https://github.com/remarkjs/remark) plugin that renders [DGMO](https://diagrammo.app) diagrams from ` ```dgmo ` fenced code blocks at build time. Powered by [`@diagrammo/dgmo`](https://www.npmjs.com/package/@diagrammo/dgmo). Zero client JavaScript by default.
 
 ```dgmo
 sequence
@@ -75,13 +75,19 @@ const config: Config = {
       'classic',
       {
         docs: {
-          remarkPlugins: [(await import('docusaurus-plugin-dgmo/remark')).default],
+          remarkPlugins: [
+            (await import('docusaurus-plugin-dgmo/remark')).default,
+          ],
         },
         blog: {
-          remarkPlugins: [(await import('docusaurus-plugin-dgmo/remark')).default],
+          remarkPlugins: [
+            (await import('docusaurus-plugin-dgmo/remark')).default,
+          ],
         },
         pages: {
-          remarkPlugins: [(await import('docusaurus-plugin-dgmo/remark')).default],
+          remarkPlugins: [
+            (await import('docusaurus-plugin-dgmo/remark')).default,
+          ],
         },
       },
     ],
@@ -121,7 +127,10 @@ export default defineConfig({
 // app/layout.tsx — add <DgmoClient /> inside <RootProvider>
 import { DgmoClient } from 'fumadocs-dgmo/client';
 // …
-<RootProvider>{children}<DgmoClient /></RootProvider>
+<RootProvider>
+  {children}
+  <DgmoClient />
+</RootProvider>;
 ```
 
 ### Pattern 4: Vanilla unified pipeline
@@ -144,8 +153,14 @@ const out = await unified()
 In your output HTML's `<head>`, add the shipped stylesheet (or inline its three rules):
 
 ```html
-<link rel="stylesheet" href="/path/to/node_modules/remark-dgmo/dist/client.css" />
-<script type="module" src="/path/to/node_modules/remark-dgmo/dist/client.js"></script>
+<link
+  rel="stylesheet"
+  href="/path/to/node_modules/remark-dgmo/dist/client.css"
+/>
+<script
+  type="module"
+  src="/path/to/node_modules/remark-dgmo/dist/client.js"
+></script>
 ```
 
 The client script is optional — it tightens each diagram's `viewBox` to its content bounds and wires up showcase-mode copy buttons. Without it, diagrams still render but may have extra whitespace and copy buttons won't function.
@@ -169,9 +184,9 @@ remarkDgmo({
   theme: 'dark',
 
   // Showcase chrome — enabled automatically in showcase mode.
-  showSource: undefined,        // boolean; default = (mode === 'showcase')
-  showCopy: undefined,          // boolean; default = (mode === 'showcase')
-  showOpenInEditor: undefined,  // boolean; default = (mode === 'showcase')
+  showSource: undefined, // boolean; default = (mode === 'showcase')
+  showCopy: undefined, // boolean; default = (mode === 'showcase')
+  showOpenInEditor: undefined, // boolean; default = (mode === 'showcase')
 
   // Where the "Open in editor" link points.
   editorBaseUrl: 'https://online.diagrammo.app',
@@ -205,16 +220,16 @@ A -> B
 ```
 ````
 
-| Token | Effect |
-|---|---|
-| `diagram` / `showcase` | Set `mode` for this block |
-| `palette=<name>` | Override palette |
-| `theme=light` / `theme=dark` / `theme=transparent` | Override theme (single-render only) |
-| `colorMode=auto` / `colorMode=light` / `colorMode=dark` | Override color-mode strategy |
-| `title="…"` | Add a caption (`<figcaption>`) |
-| `source` / `noSource` | Force source listing on/off |
-| `copy` / `noCopy` | Force copy button on/off |
-| `openInEditor` / `noOpenInEditor` | Force editor link on/off |
+| Token                                                   | Effect                              |
+| ------------------------------------------------------- | ----------------------------------- |
+| `diagram` / `showcase`                                  | Set `mode` for this block           |
+| `palette=<name>`                                        | Override palette                    |
+| `theme=light` / `theme=dark` / `theme=transparent`      | Override theme (single-render only) |
+| `colorMode=auto` / `colorMode=light` / `colorMode=dark` | Override color-mode strategy        |
+| `title="…"`                                             | Add a caption (`<figcaption>`)      |
+| `source` / `noSource`                                   | Force source listing on/off         |
+| `copy` / `noCopy`                                       | Force copy button on/off            |
+| `openInEditor` / `noOpenInEditor`                       | Force editor link on/off            |
 
 ## Working reference site
 
@@ -239,9 +254,15 @@ default export + `markdown: { format: 'md' }`, Astro's manual `import
 The shipped `client.css` keys on `[data-theme="dark"]` — the convention used by Docusaurus and Starlight. For Tailwind-style sites that signal dark mode via a `.dark` class on `<html>` (which is also what Fumadocs UI's `next-themes` default produces), don't import `client.css` directly — `fumadocs-dgmo/client.css` ships a build-time rewrite for that case. For any other custom selector, inline these three rules in your own CSS instead, swapping the selector:
 
 ```css
-.dgmo-dark { display: none; }
-html.dark .dgmo-light { display: none; }
-html.dark .dgmo-dark  { display: block; }
+.dgmo-dark {
+  display: none;
+}
+html.dark .dgmo-light {
+  display: none;
+}
+html.dark .dgmo-dark {
+  display: block;
+}
 ```
 
 For `data-color-scheme="dark"`, `:root[data-mode="dark"]`, etc. — same three rules, swap the selector to match what your toggle sets.
