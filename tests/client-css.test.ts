@@ -74,7 +74,7 @@ describe('client.css (AC-CM2 — required rules)', () => {
         r.selector.includes('svg')
     );
     expect(sizingRule).toBeDefined();
-    expect(sizingRule?.decls.width).toBe('100%');
+    expect(sizingRule?.decls['width']).toBe('100%');
   });
 
   // Showcase pre — without `white-space: pre`, the rendered source loses its

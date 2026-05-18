@@ -72,7 +72,7 @@ async function handleToolbarBtnClick(e: Event): Promise<void> {
   if (insideSummary) e.preventDefault();
 
   if (btn.matches('button.dgmo-copy')) {
-    const src = btn.dataset.dgmoSource ?? '';
+    const src = btn.dataset['dgmoSource'] ?? '';
     try {
       await navigator.clipboard.writeText(src);
     } catch {
