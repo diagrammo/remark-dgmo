@@ -28,7 +28,9 @@ export function bindDgmo(): void {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
 
   if (!clickHandlerBound) {
-    document.addEventListener('click', handleToolbarBtnClick);
+    document.addEventListener('click', (e) => {
+      void handleToolbarBtnClick(e);
+    });
     clickHandlerBound = true;
   }
   tightenViewBoxes();
