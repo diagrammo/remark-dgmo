@@ -167,13 +167,13 @@ sequence Treasure Hunt App
 active-tag Layer
 
 tag Layer as l
-  Frontend(teal)
-  Backend(purple)
-  Data(red)
+  Frontend teal
+  Backend purple
+  Data red
 
 User is an actor
-WebApp is a frontend | l: Frontend
-API is a service | l: Backend
+WebApp | l: Frontend
+API | l: Backend
 MapDB is a database | l: Data
 
 User -Search nearby loot-> WebApp

@@ -18,7 +18,8 @@ const clientCss = readFileSync(
 const clientJs = readFileSync(resolve(__dirname, '../dist/client.js'), 'utf8');
 
 // DGMO syntax pulled from dgmo-content/examples/ — chart-type declarations
-// take no colons, participants are declared as "X is an actor / a service",
+// take no colons, participants are bare names or declared with surviving
+// types (`is an actor`, `is a database`, `is a cache`, `is a queue`),
 // pie entries are space-separated. See docs/dgmo-language-spec.md.
 const blocks = [
   {
@@ -26,8 +27,8 @@ const blocks = [
     source: `sequence Login flow
 
 Client is an actor
-API is a service
-Auth is a service
+API
+Auth is a database
 
 Client -POST /login-> API
 API -validate-> Auth
