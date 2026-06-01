@@ -25,8 +25,8 @@ importers:
         version: 5.1.0
     devDependencies:
       '@diagrammo/dgmo':
-        specifier: ^0.20.0
-        version: 0.20.0(@lezer/common@1.5.2)(@lezer/highlight@1.2.3)(@lezer/lr@1.4.10)
+        specifier: ^0.21.0
+        version: 0.21.0(@lezer/common@1.5.2)(@lezer/highlight@1.2.3)(@lezer/lr@1.4.10)
       '@eslint/js':
         specifier: ^10.0.1
         version: 10.0.1(eslint@10.4.0(jiti@2.7.0))
@@ -154,8 +154,8 @@ packages:
   '@dagrejs/graphlib@4.0.1':
     resolution: {integrity: sha512-IvcV6FduIIAmLwnH+yun+QtV36SC7mERqa86aClNqmMN09WhmPPYU8ckHrZBozErf+UvHPWOTJYaGYiIcs0DgA==}
 
-  '@diagrammo/dgmo@0.20.0':
-    resolution: {integrity: sha512-uuDVFWNZgs4OD4F/MrpukYCZTKbnbqYnLJb13v9lgmHZWrJLkTZ0gJDMAE2bkFZsEfu6ZerwKWeIByetz6iA5g==}
+  '@diagrammo/dgmo@0.21.0':
+    resolution: {integrity: sha512-l2oyBDjFs4wS8ZO9evdjfe39j7SHV19ndCDb1orG+ceUPtre4zeVdVDJiP1HdL7Dcs31X7Vrl6w00Y49wkB1TQ==}
     engines: {node: '>=20.6'}
     hasBin: true
     peerDependencies:
@@ -2399,7 +2399,7 @@ snapshots:
 
   '@dagrejs/graphlib@4.0.1': {}
 
-  '@diagrammo/dgmo@0.20.0(@lezer/common@1.5.2)(@lezer/highlight@1.2.3)(@lezer/lr@1.4.10)':
+  '@diagrammo/dgmo@0.21.0(@lezer/common@1.5.2)(@lezer/highlight@1.2.3)(@lezer/lr@1.4.10)':
     dependencies:
       '@dagrejs/dagre': 3.0.0
       '@resvg/resvg-js': 2.6.2
