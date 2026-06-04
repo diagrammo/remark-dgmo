@@ -23,6 +23,9 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
+      - name: Hygiene checks (dead code, duplication, deps)
+        run: pnpm check:all
+
       - name: Typecheck
         run: pnpm typecheck
 
