@@ -18,14 +18,29 @@
  * invocation so SPA-style frameworks (Docusaurus) can re-run it after
  * route changes.
  *
- * In a non-browser environment (Node SSR), `bindDgmo()` is a no-op.
+ * In a non-browser environment, `bindDgmo()` is a no-op. We can't just check
+ * for `window`/`document`: some SSG renderers (Docusaurus's static export among
+ * them) evaluate client modules against a PARTIAL DOM that defines `window` and
+ * `document` but NOT the browser-only APIs this function relies on
+ * (`MutationObserver`, `requestAnimationFrame`, `SVGGraphicsElement.getBBox`).
+ * So we feature-detect those too and bail unless we're in a real browser —
+ * otherwise the module-level auto-init below throws during server render.
  */
 
 let clickHandlerBound = false;
 let themeObserverBound = false;
 
+function isInteractiveBrowser(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof document !== 'undefined' &&
+    typeof MutationObserver !== 'undefined' &&
+    typeof requestAnimationFrame !== 'undefined'
+  );
+}
+
 export function bindDgmo(): void {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  if (!isInteractiveBrowser()) return;
 
   if (!clickHandlerBound) {
     document.addEventListener('click', (e) => {
@@ -155,7 +170,7 @@ function tightenViewBoxes(): void {
 // Auto-init on initial load. Docusaurus-style SPA wrappers also re-call
 // bindDgmo on route changes; that's safe (the click handler is bound once,
 // viewBox tightening runs every time).
-if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+if (isInteractiveBrowser()) {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', bindDgmo);
   } else {
