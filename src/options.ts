@@ -19,7 +19,7 @@ export interface DgmoOptions {
    */
   mode?: Mode;
 
-  /** Default palette name. Default: `nord`. */
+  /** Default palette name. Default: `slate`. */
   palette?: string;
 
   /**
@@ -116,7 +116,7 @@ export function resolveOptions(opts: DgmoOptions = {}): ResolvedOptions {
   const showcase = mode === 'showcase';
   return {
     mode,
-    palette: opts.palette ?? 'nord',
+    palette: opts.palette ?? 'slate',
     theme: opts.theme ?? 'dark',
     colorMode: opts.colorMode ?? 'auto',
     showSource: opts.showSource ?? showcase,
