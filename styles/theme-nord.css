@@ -1,0 +1,96 @@
+/* remark-dgmo — optional Nord page theme.
+ *
+ * A drop-in stylesheet that paints the whole page in the Nord palette
+ * (nordtheme.com) so the page chrome matches dgmo's default `nord` diagram
+ * palette. Framework-AGNOSTIC: it only
+ * defines the palette, a set of generic `--dgmo-*` semantic variables, and
+ * base body/diagram styling. To theme a framework's own chrome (Docusaurus
+ * Infima, Fumadocs UI, …), alias that framework's variables to the `--dgmo-*`
+ * ones in your own CSS, e.g.:
+ *
+ *     :root { --ifm-background-color: var(--dgmo-bg); }
+ *
+ * Dark mode is keyed on BOTH `[data-theme="dark"]` (Docusaurus, Astro, …) and
+ * `.dark` (Fumadocs / next-themes), so it follows whichever convention your
+ * host uses — the same toggle that flips dgmo's dual-rendered diagrams.
+ */
+
+:root {
+  /* Nord palette */
+  --nord0: #2e3440;
+  --nord1: #3b4252;
+  --nord2: #434c5e;
+  --nord3: #4c566a;
+  --nord4: #d8dee9;
+  --nord5: #e5e9f0;
+  --nord6: #eceff4;
+  --nord7: #8fbcbb;
+  --nord8: #88c0d0;
+  --nord9: #81a1c1;
+  --nord10: #5e81ac;
+  --nord11: #bf616a;
+  --nord12: #d08770;
+  --nord13: #ebcb8b;
+  --nord14: #a3be8c;
+  --nord15: #b48ead;
+
+  /* Generic semantic tokens (light) — alias these to your framework's vars */
+  --dgmo-bg: var(--nord6);
+  --dgmo-surface: #ffffff;
+  --dgmo-elevated: var(--nord5);
+  --dgmo-fg: var(--nord0);
+  --dgmo-muted: var(--nord3);
+  --dgmo-border: var(--nord4);
+  --dgmo-accent: var(--nord10);
+  --dgmo-accent-hover: var(--nord9);
+}
+
+[data-theme="dark"],
+.dark {
+  --dgmo-bg: var(--nord0);
+  --dgmo-surface: var(--nord1);
+  --dgmo-elevated: var(--nord2);
+  --dgmo-fg: var(--nord6);
+  --dgmo-muted: var(--nord4);
+  --dgmo-border: var(--nord3);
+  --dgmo-accent: var(--nord8);
+  --dgmo-accent-hover: var(--nord7);
+}
+
+/* === Base page === */
+body {
+  background: var(--dgmo-bg);
+  color: var(--dgmo-fg);
+}
+
+a {
+  color: var(--dgmo-accent);
+}
+a:hover {
+  color: var(--dgmo-accent-hover);
+}
+
+/* === Diagram cards ===
+ * Frame each diagram so it reads as a discrete card against the page. The
+ * SVG carries its own palette background, so the card adds only a border,
+ * radius, and a touch of surface padding. Targets the wrapper `<figure>`
+ * (`dgmo dgmo--diagram`); showcase cards already have `.dgmo-card`. */
+.dgmo--diagram,
+.dgmo-card {
+  background: var(--dgmo-surface);
+  border: 1px solid var(--dgmo-border);
+  border-radius: 0.6rem;
+  padding: 1rem;
+  margin: 1.25rem 0;
+}
+.dgmo-card {
+  padding: 0; /* its inner .dgmo-svg / toolbar handle spacing */
+}
+
+/* Caption under a diagram, when present */
+.dgmo-caption {
+  color: var(--dgmo-muted);
+  font-size: 0.85em;
+  margin-top: 0.5rem;
+  text-align: center;
+}

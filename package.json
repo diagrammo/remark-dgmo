@@ -1,6 +1,6 @@
 {
   "name": "remark-dgmo",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Remark plugin to render DGMO diagrams from fenced code blocks at build time. Framework-agnostic core shared by astro-dgmo, docusaurus-plugin-dgmo, and any unified pipeline.",
   "license": "MIT",
   "repository": {
@@ -43,7 +43,8 @@
       "default": "./dist/remark-plugin.js"
     },
     "./client.js": "./dist/client.js",
-    "./client.css": "./dist/client.css"
+    "./client.css": "./dist/client.css",
+    "./theme-nord.css": "./dist/theme-nord.css"
   },
   "files": [
     "dist",
@@ -55,8 +56,8 @@
     "node": ">=20.6"
   },
   "scripts": {
-    "build": "tsup && cp styles/client.css dist/client.css",
-    "postbuild": "test -f dist/client.css && test -f dist/client.js",
+    "build": "tsup && cp styles/client.css dist/client.css && cp styles/theme-nord.css dist/theme-nord.css",
+    "postbuild": "test -f dist/client.css && test -f dist/client.js && test -f dist/theme-nord.css",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",
