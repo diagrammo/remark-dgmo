@@ -54,10 +54,10 @@ describe('parseFenceMeta', () => {
   it('combines flags and pairs in any order', () => {
     expect(
       parseFenceMeta(
-        'palette=dracula showcase title="My Diagram" theme=dark noCopy'
+        'palette=gruvbox showcase title="My Diagram" theme=dark noCopy'
       )
     ).toEqual({
-      palette: 'dracula',
+      palette: 'gruvbox',
       mode: 'showcase',
       title: 'My Diagram',
       theme: 'dark',

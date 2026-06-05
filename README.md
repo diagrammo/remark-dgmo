@@ -144,7 +144,7 @@ import remarkDgmo from 'remark-dgmo';
 
 const out = await unified()
   .use(remarkParse)
-  .use(remarkDgmo, { mode: 'showcase', palette: 'dracula' })
+  .use(remarkDgmo, { mode: 'showcase', palette: 'gruvbox' })
   .use(remarkRehype, { allowDangerousHtml: true })
   .use(rehypeStringify, { allowDangerousHtml: true })
   .process(source);
