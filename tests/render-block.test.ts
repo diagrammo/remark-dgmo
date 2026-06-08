@@ -61,7 +61,7 @@ describe('renderDgmoBlock (single-render path, colorMode: light)', () => {
     const a = await renderDgmoBlock(SAMPLE, 'palette=nord', {
       colorMode: 'light',
     });
-    const b = await renderDgmoBlock(SAMPLE, 'palette=gruvbox', {
+    const b = await renderDgmoBlock(SAMPLE, 'palette=catppuccin', {
       colorMode: 'light',
     });
     expect(a.html).not.toEqual(b.html);
