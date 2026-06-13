@@ -2,6 +2,7 @@ import {
   render,
   encodeDiagramUrl,
   palettes,
+  resolvePaletteOrFallback,
   type PaletteConfig,
 } from '@diagrammo/dgmo';
 import { highlightDgmo, NORD_ROLE_STYLES } from '@diagrammo/dgmo/highlight';
@@ -131,15 +132,12 @@ function resolvePaletteWithWarning(
   name: string,
   location: BlockLocation | undefined
 ): PaletteConfig {
-  const found = Object.values(palettes).find((p) => p.id === name);
-  if (!found) {
+  // Resolve/fallback/warn policy lives in @diagrammo/dgmo (Story 110.2); this
+  // adapter just routes the warning to console with remark's prefix + location.
+  return resolvePaletteOrFallback(name, (message) => {
     // eslint-disable-next-line no-console
-    console.warn(
-      `[remark-dgmo] palette "${name}" not registered, falling back to "nord"${locationSuffix(location)}`
-    );
-    return palettes.nord;
-  }
-  return found;
+    console.warn(`[remark-dgmo] ${message}${locationSuffix(location)}`);
+  });
 }
 
 /**

@@ -13,8 +13,11 @@ describe('palette fallback', () => {
     warnSpy.mockRestore();
   });
 
-  // AC-PF1: unregistered palette name → warn + nord fallback
-  it('warns and falls back to nord when palette is not registered (AC-PF1)', async () => {
+  // AC-PF1: unregistered palette name → warn + fallback to dgmo's default (slate).
+  // Story 110.2 centralized "resolve · fall back · warn" in @diagrammo/dgmo
+  // (resolvePaletteOrFallback), which resolves against the validated registry and
+  // unifies the fallback to slate (previously remark fell back to nord).
+  it('warns and falls back to slate when palette is not registered (AC-PF1)', async () => {
     await renderDgmoBlock(SAMPLE, null, {
       palette: 'totally-not-a-real-palette',
       colorMode: 'light',
@@ -22,7 +25,7 @@ describe('palette fallback', () => {
     expect(warnSpy).toHaveBeenCalledOnce();
     const msg = String(warnSpy.mock.calls[0][0]);
     expect(msg).toMatch(
-      /^\[remark-dgmo\] palette "totally-not-a-real-palette" not registered, falling back to "nord"( at .+:\d+)?$/
+      /^\[remark-dgmo\] Palette "totally-not-a-real-palette" is not registered — falling back to "slate"\.( at .+:\d+)?$/
     );
   });
 
@@ -38,45 +41,10 @@ describe('palette fallback', () => {
     expect(msg).toContain('at docs/x.mdx:42');
   });
 
-  // AC-PF2: registered palette missing a mode → defensive nord-fallback for the missing mode + warn.
-  // dgmo's registry validates both modes at registration, so this path is unreachable for the
-  // built-in palettes today. Tested here by mocking `palettes` with a synthetic entry missing `.dark`.
-  it('warns when an auto-render palette is missing one mode (AC-PF2)', async () => {
-    vi.resetModules();
-    vi.doMock('@diagrammo/dgmo', async () => {
-      const orig =
-        await vi.importActual<typeof import('@diagrammo/dgmo')>(
-          '@diagrammo/dgmo'
-        );
-      const nord = orig.palettes.nord;
-      const fake = {
-        id: 'fake-light-only',
-        name: 'Fake light-only',
-        light: nord.light,
-        // intentional: no `dark` mode
-      };
-      return {
-        ...orig,
-        palettes: { ...orig.palettes, fakeLightOnly: fake },
-      };
-    });
-    const { renderDgmoBlock: rerouted } = await import(
-      '../src/render-block.js?fake=' + Date.now()
-    );
-    await rerouted(SAMPLE, null, {
-      palette: 'fake-light-only',
-      colorMode: 'auto',
-    });
-    const messages: string[] = warnSpy.mock.calls.map((c: unknown[]) =>
-      String(c[0])
-    );
-    expect(
-      messages.some((m: string) =>
-        /^\[remark-dgmo\] palette "fake-light-only" has no dark mode; using nord dark for the missing pair/.test(
-          m
-        )
-      )
-    ).toBe(true);
-    vi.doUnmock('@diagrammo/dgmo');
-  });
+  // (Former AC-PF2 removed in Story 110.2.) It drove the missing-theme-mode
+  // borrow in renderForTheme by mocking the `palettes` barrel so resolution
+  // returned a malformed (dark-less) palette. Resolution now goes through
+  // dgmo's registry (resolvePaletteOrFallback), which the barrel mock doesn't
+  // touch and which only yields mode-validated palettes — so that injection
+  // vector no longer reaches the branch. The borrow remains as defensive code.
 });
