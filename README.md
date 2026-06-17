@@ -2,6 +2,8 @@
 
 Framework-agnostic [remark](https://github.com/remarkjs/remark) plugin that renders [DGMO](https://diagrammo.app) diagrams from ` ```dgmo ` fenced code blocks at build time. Powered by [`@diagrammo/dgmo`](https://www.npmjs.com/package/@diagrammo/dgmo). Zero client JavaScript by default.
 
+📖 **Setup guides for Astro, Docusaurus & Fumadocs:** [diagrammo.app/embed](https://diagrammo.app/embed)
+
 ```dgmo
 sequence
 Client -POST /login-> API
