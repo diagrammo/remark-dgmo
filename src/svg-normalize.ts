@@ -1,172 +1,20 @@
 /**
  * Normalize an SVG produced by `@diagrammo/dgmo` for inline embedding:
  *
- * - Compute a tight content bounding box from element coordinates and
- *   set the root `viewBox` to bbox+padding. Replaces the JS-side
- *   `getBBox()` step that can't measure dual-rendered SVGs hidden by
- *   color-mode CSS.
+ * - Compute a tight content bounding box and set the root `viewBox` to
+ *   bbox+padding so the diagram's aspect ratio matches its CONTENT.
  * - Ensure the root `<svg>` has a `viewBox` so it scales responsively.
- * - Strip fixed `width="N"` / `height="N"` so CSS controls sizing.
- * - Remove any inline `background:` from the root style so the page
- *   background shows through.
- */
-export function normalizeSvg(input: string): string {
-  let svg = input;
-  const rootMatch = svg.match(/<svg[^>]*>/);
-  const rootTag = rootMatch?.[0] ?? '';
-  if (rootTag && !rootTag.includes('viewBox')) {
-    const wh = rootTag.match(/width="(\d+)"[^>]*height="(\d+)"/);
-    if (wh) {
-      svg = svg.replace(/<svg/, `<svg viewBox="0 0 ${wh[1]} ${wh[2]}"`);
-    }
-  }
-
-  // Tighten viewBox to the content bbox. dgmo emits diagrams within a
-  // fixed-size canvas (e.g. viewBox="0 0 1200 250"), with content often
-  // occupying only a fraction of that canvas. Tightening here means
-  // dual-rendered SVGs render at the same scale whether visible or not.
-  const tight = computeBBox(svg);
-  if (tight && tight.width > 0 && tight.height > 0) {
-    const pad = 16;
-    const vb = `${tight.x - pad} ${tight.y - pad} ${tight.width + pad * 2} ${tight.height + pad * 2}`;
-    svg = svg.replace(/(<svg[^>]*?)viewBox="[^"]*"/, `$1viewBox="${vb}"`);
-  }
-
-  svg = svg.replace(/(<svg[^>]*?) width="[^"]*"/g, '$1');
-  svg = svg.replace(/(<svg[^>]*?) height="[^"]*"/g, '$1');
-  svg = svg.replace(/(<svg[^>]*?style="[^"]*?)background:[^;"]*;?\s*/g, '$1');
-  svg = svg.replace(/<svg\s{2,}/g, '<svg ');
-  return svg;
-}
-
-/**
- * Compute an approximate content bounding box from raw element coordinates.
+ * - Strip fixed `width`/`height` so CSS controls sizing.
+ * - Remove any inline `background:` so the page background shows through.
  *
- * This is a regex walk, not a real SVG layout — it ignores `transform`
- * attributes and uses a heuristic for text widths. dgmo's renderer mostly
- * uses absolute coordinates within its viewBox, so the approximation is
- * close enough that the rendered output reliably fills the visible area.
+ * This is a thin re-export of dgmo's `normalizeSvgForEmbed` so the doc-site
+ * wrappers (astro/docusaurus/fumadocs), which consume this package, share the
+ * EXACT embed-sizing logic used by dgmo + the Obsidian plugin — including the
+ * within-canvas over-shoot guard, the coverage under-shoot guard, and
+ * text-anchor–aware width estimation. This file used to carry its own fork of
+ * that logic, which drifted and re-introduced clipping (word-cloud collapse,
+ * arc-path over-shoot, start-anchored text undercount) that dgmo had already
+ * fixed. Single-sourcing removes the drift permanently. The `normalizeSvg`
+ * name is preserved for backward compatibility with existing consumers.
  */
-function computeBBox(
-  svg: string
-): { x: number; y: number; width: number; height: number } | null {
-  const xs: number[] = [];
-  const ys: number[] = [];
-
-  function push(x: number, y: number): void {
-    if (Number.isFinite(x) && Number.isFinite(y)) {
-      xs.push(x);
-      ys.push(y);
-    }
-  }
-
-  function attr(tag: string, name: string): number | null {
-    const m = tag.match(new RegExp(`\\b${name}="([^"]*)"`));
-    if (!m) return null;
-    const n = parseFloat(m[1]);
-    return Number.isFinite(n) ? n : null;
-  }
-
-  // <rect x y width height>
-  for (const m of svg.matchAll(/<rect\b[^>]*?\/?>/g)) {
-    const tag = m[0];
-    const x = attr(tag, 'x');
-    const y = attr(tag, 'y');
-    const w = attr(tag, 'width');
-    const h = attr(tag, 'height');
-    if (x !== null && y !== null && w !== null && h !== null) {
-      push(x, y);
-      push(x + w, y + h);
-    }
-  }
-
-  // <line x1 y1 x2 y2>
-  for (const m of svg.matchAll(/<line\b[^>]*?\/?>/g)) {
-    const tag = m[0];
-    const x1 = attr(tag, 'x1');
-    const y1 = attr(tag, 'y1');
-    const x2 = attr(tag, 'x2');
-    const y2 = attr(tag, 'y2');
-    if (x1 !== null && y1 !== null && x2 !== null && y2 !== null) {
-      push(x1, y1);
-      push(x2, y2);
-    }
-  }
-
-  // <circle cx cy r>
-  for (const m of svg.matchAll(/<circle\b[^>]*?\/?>/g)) {
-    const tag = m[0];
-    const cx = attr(tag, 'cx');
-    const cy = attr(tag, 'cy');
-    const r = attr(tag, 'r');
-    if (cx !== null && cy !== null && r !== null) {
-      push(cx - r, cy - r);
-      push(cx + r, cy + r);
-    }
-  }
-
-  // <ellipse cx cy rx ry>
-  for (const m of svg.matchAll(/<ellipse\b[^>]*?\/?>/g)) {
-    const tag = m[0];
-    const cx = attr(tag, 'cx');
-    const cy = attr(tag, 'cy');
-    const rx = attr(tag, 'rx');
-    const ry = attr(tag, 'ry');
-    if (cx !== null && cy !== null && rx !== null && ry !== null) {
-      push(cx - rx, cy - ry);
-      push(cx + rx, cy + ry);
-    }
-  }
-
-  // <text x y>some content</text>
-  // Approximate width: text content length × an empirical font width factor.
-  // dgmo uses Inter ~14px by default; ~7-8px per character is a usable
-  // rough estimate that won't drastically under- or over-count.
-  for (const m of svg.matchAll(/<text\b([^>]*?)>([\s\S]*?)<\/text>/g)) {
-    const tag = `<text${m[1]}>`;
-    const text = m[2].replace(/<[^>]+>/g, ''); // strip inner tags (tspan, etc.)
-    const x = attr(tag, 'x');
-    const y = attr(tag, 'y');
-    if (x !== null && y !== null) {
-      const w = text.length * 7;
-      // text-anchor may be start/middle/end; assume worst case (middle) for span
-      push(x - w / 2, y - 14);
-      push(x + w / 2, y + 4);
-    }
-  }
-
-  // <path d="..."> — pull every coordinate pair out of the d attribute.
-  for (const m of svg.matchAll(/<path\b[^>]*?\bd="([^"]+)"/g)) {
-    const d = m[1];
-    const nums = d.match(/-?\d+(?:\.\d+)?/g);
-    if (!nums) continue;
-    for (let i = 0; i + 1 < nums.length; i += 2) {
-      push(parseFloat(nums[i]), parseFloat(nums[i + 1]));
-    }
-  }
-
-  // <polygon points="x,y x,y ..."> and <polyline>
-  for (const m of svg.matchAll(
-    /<(?:polygon|polyline)\b[^>]*?\bpoints="([^"]+)"/g
-  )) {
-    const nums = m[1].match(/-?\d+(?:\.\d+)?/g);
-    if (!nums) continue;
-    for (let i = 0; i + 1 < nums.length; i += 2) {
-      push(parseFloat(nums[i]), parseFloat(nums[i + 1]));
-    }
-  }
-
-  if (xs.length === 0 || ys.length === 0) return null;
-
-  const minX = Math.min(...xs);
-  const maxX = Math.max(...xs);
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
-
-  return {
-    x: minX,
-    y: minY,
-    width: maxX - minX,
-    height: maxY - minY,
-  };
-}
+export { normalizeSvgForEmbed as normalizeSvg } from '@diagrammo/dgmo';
