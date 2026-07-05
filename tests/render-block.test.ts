@@ -30,6 +30,22 @@ describe('renderDgmoBlock (single-render path, colorMode: light)', () => {
     expect(html).toContain('online.diagrammo.app');
   });
 
+  it('showcase chrome is the standard block: icon toolbar in a <summary>, no text labels', async () => {
+    const { html } = await renderDgmoBlock(SAMPLE, 'showcase', {
+      colorMode: 'light',
+    });
+    expect(html).toContain('<details class="dgmo-source-wrap">');
+    expect(html).toContain(
+      '<summary class="dgmo-toolbar" aria-label="View DGMO source">'
+    );
+    expect(html).toContain('<span class="dgmo-toggle"');
+    expect(html).not.toContain('dgmo-chevron');
+    expect(html).not.toContain('>source<');
+    expect(html).not.toContain('dgmo-card');
+    // token highlighting is class-based (styled by client.css), not inline
+    expect(html).toContain('class="dgmo-tok-');
+  });
+
   it('respects integration default mode = showcase', async () => {
     const { html } = await renderDgmoBlock(SAMPLE, null, {
       mode: 'showcase',
@@ -47,14 +63,15 @@ describe('renderDgmoBlock (single-render path, colorMode: light)', () => {
     expect(html).not.toContain('dgmo--showcase');
   });
 
-  it('per-block title renders as caption', async () => {
+  it('per-block title becomes the wrapper aria-label (no visible caption)', async () => {
     const { html } = await renderDgmoBlock(
       SAMPLE,
       'showcase title="Login flow"',
       { colorMode: 'light' }
     );
-    expect(html).toContain('<figcaption');
-    expect(html).toContain('Login flow');
+    expect(html).toContain('aria-label="Login flow"');
+    expect(html).not.toContain('<figcaption');
+    expect(html).not.toContain('dgmo-caption');
   });
 
   it('per-block palette override changes resulting svg', async () => {
@@ -119,15 +136,15 @@ describe('renderDgmoBlock — legacyClassNames (AC-RD6)', () => {
     expect(html).toContain('class="dgmo dgmo--diagram astro-dgmo"');
   });
 
-  it('appends legacy names to outer wrapper and inner card in showcase mode', async () => {
+  it('appends legacy names to outer wrapper and inner svg wrapper in showcase mode', async () => {
     const { html } = await renderDgmoBlock(SAMPLE, 'showcase', {
       colorMode: 'light',
       legacyClassNames: ['astro-dgmo', 'astro-dgmo-card'],
     });
     // outer wrapper has both legacy entries appended after dgmo--showcase
     expect(html).toContain('dgmo--showcase astro-dgmo astro-dgmo-card');
-    // inner card has the same legacy entries appended after dgmo-card
-    expect(html).toContain('dgmo-card astro-dgmo astro-dgmo-card');
+    // inner svg wrapper has the same legacy entries appended
+    expect(html).toContain('dgmo-svg astro-dgmo astro-dgmo-card');
   });
 
   it('default behavior (no legacyClassNames) emits only new dgmo-* class names', async () => {
