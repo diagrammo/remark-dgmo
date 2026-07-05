@@ -65,7 +65,7 @@ export async function renderDgmoBlock(
     className: opts.className,
     legacyClassNames: opts.legacyClassNames,
     onWarn: (message) => {
-      // eslint-disable-next-line no-console
+       
       console.warn(`[remark-dgmo] ${message}${locationSuffix(location)}`);
     },
   };
