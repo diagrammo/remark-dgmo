@@ -87,3 +87,13 @@ describe('client.css (AC-CM2 — required rules)', () => {
     expect(preRule?.decls['white-space']).toBe('pre');
   });
 });
+
+describe('client.css ↔ @diagrammo/dgmo BLOCK_CSS drift guard (BL-114)', () => {
+  it('is byte-identical to the canonical block stylesheet', async () => {
+    const cssPath = resolve(__dirname, '../styles/client.css');
+    const shipped = readFileSync(cssPath, 'utf8');
+    const { BLOCK_CSS } = await import('@diagrammo/dgmo/block');
+    // dist/block.css is BLOCK_CSS minus the template literal's leading \n.
+    expect(shipped.trim()).toBe(BLOCK_CSS.trim());
+  });
+});

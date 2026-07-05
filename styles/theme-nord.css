@@ -74,17 +74,15 @@ a:hover {
  * Frame each diagram so it reads as a discrete card against the page. The
  * SVG carries its own palette background, so the card adds only a border,
  * radius, and a touch of surface padding. Targets the wrapper `<figure>`
- * (`dgmo dgmo--diagram`); showcase cards already have `.dgmo-card`. */
+ * (`dgmo dgmo--diagram` / `dgmo dgmo--showcase` — the standard block has no
+ * inner card element). */
 .dgmo--diagram,
-.dgmo-card {
+.dgmo--showcase {
   background: var(--dgmo-surface);
   border: 1px solid var(--dgmo-border);
   border-radius: 0.6rem;
   padding: 1rem;
   margin: 1.25rem 0;
-}
-.dgmo-card {
-  padding: 0; /* its inner .dgmo-svg / toolbar handle spacing */
 }
 
 /* Caption under a diagram, when present */

@@ -1,5 +1,6 @@
 import { visit } from 'unist-util-visit';
 import type { Root, Code, Html, Parent } from 'mdast';
+import { errorBlockHtml } from '@diagrammo/dgmo/block';
 import { renderDgmoBlock, type BlockLocation } from './render-block.js';
 import type { DgmoOptions } from './options.js';
 import { htmlToMdxJsxNode } from './mdx-node.js';
@@ -63,7 +64,7 @@ export default function remarkDgmo(options: RemarkDgmoOptions = {}) {
           options,
           t.payload.location
         ).catch((err) => ({
-          html: errorHtml(err, t.payload.source, options),
+          html: errorBlockHtml(err, t.payload.source, options),
           diagnostics: [],
         }))
       )
@@ -86,29 +87,4 @@ export default function remarkDgmo(options: RemarkDgmoOptions = {}) {
       t.parent.children[t.index] = replacement as unknown as Html;
     }
   };
-}
-
-function errorHtml(
-  err: unknown,
-  source: string,
-  options: RemarkDgmoOptions
-): string {
-  const msg =
-    err instanceof Error ? err.message : 'Failed to render dgmo block.';
-  const safeMsg = msg.replace(/[<>&]/g, (ch) =>
-    ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : '&amp;'
-  );
-  const safeSrc = source.replace(/[<>&]/g, (ch) =>
-    ch === '<' ? '&lt;' : ch === '>' ? '&gt;' : '&amp;'
-  );
-  const baseClass = options.className ?? 'dgmo';
-  const legacy = (options.legacyClassNames ?? []).join(' ');
-  const cls = legacy
-    ? `${baseClass} ${legacy} ${baseClass}--error`
-    : `${baseClass} ${baseClass}--error`;
-  return (
-    `<div class="${cls}" role="alert">` +
-    `<strong>dgmo render error:</strong> ${safeMsg}` +
-    `<pre>${safeSrc}</pre></div>`
-  );
 }
