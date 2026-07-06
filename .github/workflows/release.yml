@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -66,14 +67,9 @@ jobs:
         run: pnpm build
 
       - name: Publish to npm
-        # Auth via NODE_AUTH_TOKEN sourced from the org-level NPM_TOKEN
-        # secret (granular access token covering all @diagrammo/* +
-        # sibling wrapper packages). Provenance is off — switching from
-        # OIDC trusted-publishing to a shared token in exchange for
-        # not having to pre-configure each new package on npmjs.com.
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm publish --access public --tag "${{ steps.npm_tag.outputs.tag }}"
+        # OIDC via npm Trusted Publishing (configured per-package on
+        # npmjs.com). No stored token; provenance is attested automatically.
+        run: npm publish --access public --provenance --tag "${{ steps.npm_tag.outputs.tag }}"
 
       - name: Wait for npm propagation
         run: |
