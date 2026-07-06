@@ -16,11 +16,14 @@ describe('normalizeSvg', () => {
     expect(out).toContain('viewBox="0 0 200 100"');
   });
 
-  it('removes inline background from style', () => {
+  it('preserves the inline background (embeds are opaque)', () => {
+    // dgmo's opaque-everywhere change keeps the SVG background so embedded
+    // charts render on their palette bg, not transparent. normalizeSvg must
+    // pass it through untouched.
     const out = normalizeSvg(
       '<svg style="background:#fff;font:1px sans-serif" viewBox="0 0 1 1"></svg>'
     );
-    expect(out).not.toContain('background:#fff');
+    expect(out).toContain('background:#fff');
     expect(out).toContain('font:1px sans-serif');
   });
 
