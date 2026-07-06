@@ -88,6 +88,43 @@ describe('client.css (AC-CM2 — required rules)', () => {
   });
 });
 
+describe('adaptClientCssToClassToggle (shared dark-selector rewrite)', () => {
+  it('rewrites every [data-theme="dark"] to html.dark by default', async () => {
+    const { adaptClientCssToClassToggle, CLIENT_CSS_DARK_SELECTOR } =
+      await import('../src/client-css.js');
+    const src =
+      '[data-theme="dark"] .dgmo-light { display: none }\n' +
+      '.dgmo-svg { color: black }\n' +
+      '[data-theme="dark"] .dgmo-dark { display: block }';
+    const out = adaptClientCssToClassToggle(src);
+    expect(out).not.toContain(CLIENT_CSS_DARK_SELECTOR);
+    expect(out.match(/html\.dark/g)).toHaveLength(2);
+    expect(out).toContain('.dgmo-svg { color: black }');
+  });
+
+  it('honors a custom toggle selector', async () => {
+    const { adaptClientCssToClassToggle } = await import(
+      '../src/client-css.js'
+    );
+    expect(
+      adaptClientCssToClassToggle('[data-theme="dark"] .x { a: b }', 'body.dark')
+    ).toBe('body.dark .x { a: b }');
+  });
+
+  it('rewrites the real shipped client.css cleanly (no residual data-theme)', async () => {
+    const { adaptClientCssToClassToggle } = await import(
+      '../src/client-css.js'
+    );
+    const css = readFileSync(
+      resolve(__dirname, '../styles/client.css'),
+      'utf8'
+    );
+    const adapted = adaptClientCssToClassToggle(css);
+    expect(adapted).not.toContain('[data-theme="dark"]');
+    expect(adapted).toContain('html.dark');
+  });
+});
+
 describe('client.css ↔ @diagrammo/dgmo BLOCK_CSS drift guard (BL-114)', () => {
   it('is byte-identical to the canonical block stylesheet', async () => {
     const cssPath = resolve(__dirname, '../styles/client.css');

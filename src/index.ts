@@ -19,3 +19,8 @@ export { normalizeSvg } from './svg-normalize.js';
 
 export { resolveOptions } from './options.js';
 export type { Mode, Theme, DgmoOptions, ResolvedOptions } from './options.js';
+
+export {
+  adaptClientCssToClassToggle,
+  CLIENT_CSS_DARK_SELECTOR,
+} from './client-css.js';
