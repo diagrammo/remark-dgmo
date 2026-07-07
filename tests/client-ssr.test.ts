@@ -48,6 +48,12 @@ describe('client SSR safety', () => {
     });
 
     expect(() => bindDgmo()).not.toThrow();
-    expect(addEventListener).toHaveBeenCalledWith('click', expect.any(Function));
+    // Capture phase (third arg true): the handler must beat framework-level
+    // click delegation (Docusaurus's Details toggle) to in-summary buttons.
+    expect(addEventListener).toHaveBeenCalledWith(
+      'click',
+      expect.any(Function),
+      true
+    );
   });
 });

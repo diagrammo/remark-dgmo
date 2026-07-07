@@ -43,9 +43,21 @@ export function bindDgmo(): void {
   if (!isInteractiveBrowser()) return;
 
   if (!clickHandlerBound) {
-    document.addEventListener('click', (e) => {
-      void handleToolbarBtnClick(e);
-    });
+    // Capture phase, not bubble: the handler must run BEFORE any
+    // framework-level click handling. Docusaurus (markdown.format 'md')
+    // maps the raw <details> onto its theme Details component, whose React
+    // onClick — delegated at the app root — toggles the panel for ANY click
+    // inside the <summary>, including our copy/open buttons. Capturing at
+    // document and stopping propagation for in-summary buttons keeps those
+    // clicks ours; plain summary clicks pass through untouched so the
+    // toggle (native or framework-managed) still works.
+    document.addEventListener(
+      'click',
+      (e) => {
+        void handleToolbarBtnClick(e);
+      },
+      true
+    );
     clickHandlerBound = true;
   }
   tightenViewBoxes();
@@ -86,7 +98,12 @@ async function handleToolbarBtnClick(e: Event): Promise<void> {
   // manually re-open the link below when the open-in-editor button is
   // nested inside a summary.
   const insideSummary = !!btn.closest('summary');
-  if (insideSummary) e.preventDefault();
+  if (insideSummary) {
+    e.preventDefault();
+    // Keep the click from reaching framework toggle handlers (Docusaurus's
+    // Details component collapses the panel on any in-summary click).
+    e.stopPropagation();
+  }
 
   if (btn.matches('button.dgmo-copy')) {
     const src = btn.dataset['dgmoSource'] ?? '';
