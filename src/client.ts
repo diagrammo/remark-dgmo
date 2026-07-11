@@ -27,6 +27,12 @@
  * otherwise the module-level auto-init below throws during server render.
  */
 
+// Lean, zero-import ~1 KB ticker for the `countdown` chart type — the only
+// dynamic dgmo chart. Its own subpath so this client bundle never pulls the
+// render pipeline. Lights up all five remark host wrappers (Astro, Docusaurus,
+// Fumadocs, Nextra, VitePress) — they all call bindDgmo().
+import { startCountdowns } from '@diagrammo/dgmo/countdown';
+
 let clickHandlerBound = false;
 let themeObserverBound = false;
 
@@ -61,6 +67,10 @@ export function bindDgmo(): void {
     clickHandlerBound = true;
   }
   tightenViewBoxes();
+
+  // Seed any countdown chart on the page and register the single 1s ticker
+  // (idempotent; no-op when there are no countdowns). Safe on every re-run.
+  startCountdowns();
 
   // Color-mode toggles flip which dual-render wrapper is `display: none`.
   // The wrapper that was hidden at load couldn't be measured (getBBox
