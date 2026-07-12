@@ -32,6 +32,9 @@
 // render pipeline. Lights up all five remark host wrappers (Astro, Docusaurus,
 // Fumadocs, Nextra, VitePress) — they all call bindDgmo().
 import { startCountdowns } from '@diagrammo/dgmo/countdown';
+// Same deal for the `clock` chart type — a sibling ~1 KB 1s ticker on its own
+// subpath. Updates the baked `data-dgmo-clock` analog/digital world-clock rows.
+import { startClocks } from '@diagrammo/dgmo/clock';
 
 let clickHandlerBound = false;
 let themeObserverBound = false;
@@ -71,6 +74,10 @@ export function bindDgmo(): void {
   // Seed any countdown chart on the page and register the single 1s ticker
   // (idempotent; no-op when there are no countdowns). Safe on every re-run.
   startCountdowns();
+
+  // Same for any clock chart — seed the baked rows and register the single 1s
+  // ticker (idempotent; no-op when there are no clocks). Safe on every re-run.
+  startClocks();
 
   // Color-mode toggles flip which dual-render wrapper is `display: none`.
   // The wrapper that was hidden at load couldn't be measured (getBBox
