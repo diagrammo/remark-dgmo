@@ -71,13 +71,14 @@ export function bindDgmo(): void {
   }
   tightenViewBoxes();
 
-  // Seed any countdown chart on the page and register the single 1s ticker
-  // (idempotent; no-op when there are no countdowns). Safe on every re-run.
-  startCountdowns();
-
-  // Same for any clock chart — seed the baked rows and register the single 1s
-  // ticker (idempotent; no-op when there are no clocks). Safe on every re-run.
-  startClocks();
+  // Seed the dynamic chart types (countdown, clock) and register their 1s
+  // tickers (idempotent; no-op when none are on the page). Both call
+  // `window.setInterval`, so gate on it: a partial DOM can clear the
+  // interactive-browser guard above yet still lack timers (some SSG runtimes).
+  if (typeof window.setInterval === 'function') {
+    startCountdowns();
+    startClocks();
+  }
 
   // Color-mode toggles flip which dual-render wrapper is `display: none`.
   // The wrapper that was hidden at load couldn't be measured (getBBox
