@@ -44,6 +44,17 @@ export interface DgmoOptions {
   colorMode?: 'auto' | 'light' | 'dark';
 
   /**
+   * Embed background. Default: `auto`.
+   *
+   * - `auto` — strip the theme's opaque root background so diagrams blend into
+   *   the host page surface, except background-meaningful types like `map`
+   *   (whose background is the ocean), which stay opaque.
+   * - `transparent` / `opaque` — force the choice for every block regardless of
+   *   type. Override per-block via the fence info string: ```dgmo opaque
+   */
+  background?: 'auto' | 'transparent' | 'opaque';
+
+  /**
    * Show source code above the diagram. Defaults to `true` in showcase mode,
    * `false` in diagram mode.
    */
@@ -119,6 +130,7 @@ export function resolveOptions(opts: DgmoOptions = {}): ResolvedOptions {
     palette: opts.palette ?? 'slate',
     theme: opts.theme ?? 'dark',
     colorMode: opts.colorMode ?? 'auto',
+    background: opts.background ?? 'auto',
     showSource: opts.showSource ?? showcase,
     showCopy: opts.showCopy ?? showcase,
     showOpenInEditor: opts.showOpenInEditor ?? showcase,

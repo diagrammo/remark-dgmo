@@ -14,6 +14,7 @@ export interface BlockOptions {
   palette?: string;
   theme?: Theme;
   colorMode?: 'auto' | 'light' | 'dark';
+  background?: 'auto' | 'transparent' | 'opaque';
   showSource?: boolean;
   showCopy?: boolean;
   showOpenInEditor?: boolean;
@@ -23,6 +24,8 @@ export interface BlockOptions {
 const BARE_FLAGS: Record<string, Partial<BlockOptions>> = {
   diagram: { mode: 'diagram' },
   showcase: { mode: 'showcase' },
+  transparent: { background: 'transparent' },
+  opaque: { background: 'opaque' },
   noSource: { showSource: false },
   source: { showSource: true },
   noCopy: { showCopy: false },
@@ -30,6 +33,12 @@ const BARE_FLAGS: Record<string, Partial<BlockOptions>> = {
   noOpenInEditor: { showOpenInEditor: false },
   openInEditor: { showOpenInEditor: true },
 };
+
+const VALID_BACKGROUNDS = new Set<'auto' | 'transparent' | 'opaque'>([
+  'auto',
+  'transparent',
+  'opaque',
+]);
 
 const VALID_THEMES = new Set<Theme>(['light', 'dark', 'transparent']);
 const VALID_COLOR_MODES = new Set<'auto' | 'light' | 'dark'>([
@@ -70,6 +79,11 @@ export function parseFenceMeta(meta: string | null | undefined): BlockOptions {
         break;
       case 'mode':
         if (val === 'diagram' || val === 'showcase') out.mode = val;
+        break;
+      case 'background':
+        if (VALID_BACKGROUNDS.has(val as 'auto' | 'transparent' | 'opaque')) {
+          out.background = val as 'auto' | 'transparent' | 'opaque';
+        }
         break;
       case 'showSource':
         out.showSource = parseBool(val);

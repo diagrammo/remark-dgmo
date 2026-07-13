@@ -47,6 +47,7 @@ export async function renderDgmoBlock(
     palette: block.palette ?? base.palette,
     theme: block.theme ?? base.theme,
     colorMode: block.colorMode ?? base.colorMode,
+    background: block.background ?? base.background,
     showSource: block.showSource ?? (block.mode ? showcase : base.showSource),
     showCopy: block.showCopy ?? (block.mode ? showcase : base.showCopy),
     showOpenInEditor:
@@ -57,6 +58,7 @@ export async function renderDgmoBlock(
     mode: opts.mode,
     palette: opts.palette,
     colorMode: opts.colorMode,
+    background: opts.background,
     showSource: opts.showSource,
     showCopy: opts.showCopy,
     showOpenInEditor: opts.showOpenInEditor,

@@ -16,14 +16,14 @@ describe('normalizeSvg', () => {
     expect(out).toContain('viewBox="0 0 200 100"');
   });
 
-  it('preserves the inline background (embeds are opaque)', () => {
-    // dgmo's opaque-everywhere change keeps the SVG background so embedded
-    // charts render on their palette bg, not transparent. normalizeSvg must
-    // pass it through untouched.
+  it('strips the inline background by default (embeds blend into the host)', () => {
+    // dgmo 0.50.2 flipped the embed default to transparent: normalizeSvg drops
+    // the root `background:` so the diagram inherits the host page surface.
+    // Other inline styles are preserved.
     const out = normalizeSvg(
       '<svg style="background:#fff;font:1px sans-serif" viewBox="0 0 1 1"></svg>'
     );
-    expect(out).toContain('background:#fff');
+    expect(out).not.toContain('background:#fff');
     expect(out).toContain('font:1px sans-serif');
   });
 

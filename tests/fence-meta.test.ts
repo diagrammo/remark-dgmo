@@ -13,6 +13,13 @@ describe('parseFenceMeta', () => {
     expect(parseFenceMeta('diagram')).toEqual({ mode: 'diagram' });
   });
 
+  it('parses background flags (bare + key=value)', () => {
+    expect(parseFenceMeta('opaque')).toEqual({ background: 'opaque' });
+    expect(parseFenceMeta('transparent')).toEqual({ background: 'transparent' });
+    expect(parseFenceMeta('background=opaque')).toEqual({ background: 'opaque' });
+    expect(parseFenceMeta('background=nope')).toEqual({});
+  });
+
   it('parses key=value pairs', () => {
     expect(parseFenceMeta('palette=catppuccin theme=light')).toEqual({
       palette: 'catppuccin',
