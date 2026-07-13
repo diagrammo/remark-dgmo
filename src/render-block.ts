@@ -50,6 +50,7 @@ export async function renderDgmoBlock(
     background: block.background ?? base.background,
     showSource: block.showSource ?? (block.mode ? showcase : base.showSource),
     showCopy: block.showCopy ?? (block.mode ? showcase : base.showCopy),
+    showExpand: block.showExpand ?? (block.mode ? showcase : base.showExpand),
     showOpenInEditor:
       block.showOpenInEditor ?? (block.mode ? showcase : base.showOpenInEditor),
   };
@@ -61,6 +62,7 @@ export async function renderDgmoBlock(
     background: opts.background,
     showSource: opts.showSource,
     showCopy: opts.showCopy,
+    showExpand: opts.showExpand,
     showOpenInEditor: opts.showOpenInEditor,
     editorBaseUrl: opts.editorBaseUrl,
     wrapper: opts.wrapper,

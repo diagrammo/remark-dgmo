@@ -17,6 +17,7 @@ export interface BlockOptions {
   background?: 'auto' | 'transparent' | 'opaque';
   showSource?: boolean;
   showCopy?: boolean;
+  showExpand?: boolean;
   showOpenInEditor?: boolean;
   title?: string;
 }
@@ -30,6 +31,8 @@ const BARE_FLAGS: Record<string, Partial<BlockOptions>> = {
   source: { showSource: true },
   noCopy: { showCopy: false },
   copy: { showCopy: true },
+  noExpand: { showExpand: false },
+  expand: { showExpand: true },
   noOpenInEditor: { showOpenInEditor: false },
   openInEditor: { showOpenInEditor: true },
 };
@@ -90,6 +93,9 @@ export function parseFenceMeta(meta: string | null | undefined): BlockOptions {
         break;
       case 'showCopy':
         out.showCopy = parseBool(val);
+        break;
+      case 'showExpand':
+        out.showExpand = parseBool(val);
         break;
       case 'showOpenInEditor':
         out.showOpenInEditor = parseBool(val);

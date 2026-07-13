@@ -58,6 +58,24 @@ describe('parseFenceMeta', () => {
     });
   });
 
+  it('parses the expand flag (bare + key=value), independent of the others', () => {
+    expect(parseFenceMeta('showcase noExpand')).toEqual({
+      mode: 'showcase',
+      showExpand: false,
+    });
+    expect(parseFenceMeta('expand')).toEqual({ showExpand: true });
+    expect(parseFenceMeta('showExpand=false')).toEqual({ showExpand: false });
+    expect(
+      parseFenceMeta('showcase noSource noCopy noExpand noOpenInEditor')
+    ).toEqual({
+      mode: 'showcase',
+      showSource: false,
+      showCopy: false,
+      showExpand: false,
+      showOpenInEditor: false,
+    });
+  });
+
   it('combines flags and pairs in any order', () => {
     expect(
       parseFenceMeta(

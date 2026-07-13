@@ -185,9 +185,11 @@ remarkDgmo({
   // Default theme when colorMode is 'light' or 'dark' (single-render). Ignored under 'auto'.
   theme: 'dark',
 
-  // Showcase chrome — enabled automatically in showcase mode.
+  // Showcase chrome — each toolbar button toggles independently. Enabled
+  // automatically in showcase mode; set any to false to hide just that button.
   showSource: undefined, // boolean; default = (mode === 'showcase')
   showCopy: undefined, // boolean; default = (mode === 'showcase')
+  showExpand: undefined, // boolean; default = (mode === 'showcase')
   showOpenInEditor: undefined, // boolean; default = (mode === 'showcase')
 
   // Where the "Open in editor" link points.
@@ -229,9 +231,14 @@ A -> B
 | `theme=light` / `theme=dark` / `theme=transparent`      | Override theme (single-render only) |
 | `colorMode=auto` / `colorMode=light` / `colorMode=dark` | Override color-mode strategy        |
 | `title="…"`                                             | Add a caption (`<figcaption>`)      |
-| `source` / `noSource`                                   | Force source listing on/off         |
+| `source` / `noSource`                                   | Force source view + toggle on/off   |
 | `copy` / `noCopy`                                       | Force copy button on/off            |
+| `expand` / `noExpand`                                   | Force expand (full-screen) on/off   |
 | `openInEditor` / `noOpenInEditor`                       | Force editor link on/off            |
+
+Each toolbar button is independent — e.g. ` ```dgmo showcase noSource noExpand `
+keeps just the copy + open-in-editor buttons, and ` ```dgmo copy ` adds only a
+copy button to an otherwise bare diagram.
 
 ## Working reference site
 

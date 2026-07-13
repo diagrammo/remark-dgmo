@@ -67,6 +67,13 @@ export interface DgmoOptions {
   showCopy?: boolean;
 
   /**
+   * Show the expand (full-screen lightbox) button. Defaults to `true` in
+   * showcase mode, `false` in diagram mode. Needs the client script loaded to
+   * do anything.
+   */
+  showExpand?: boolean;
+
+  /**
    * Show an "Open in online editor" link. Defaults to `true` in showcase mode,
    * `false` in diagram mode.
    */
@@ -111,16 +118,21 @@ export interface DgmoOptions {
 }
 
 export type ResolvedOptions = Required<
-  Omit<DgmoOptions, 'showSource' | 'showCopy' | 'showOpenInEditor' | 'mdx'>
+  Omit<
+    DgmoOptions,
+    'showSource' | 'showCopy' | 'showExpand' | 'showOpenInEditor' | 'mdx'
+  >
 > & {
   showSource: boolean;
   showCopy: boolean;
+  showExpand: boolean;
   showOpenInEditor: boolean;
   mdx: boolean;
 };
 
 /**
- * Apply defaults, including mode-dependent defaults for showSource/showCopy/showOpenInEditor.
+ * Apply defaults, including mode-dependent defaults for
+ * showSource/showCopy/showExpand/showOpenInEditor.
  */
 export function resolveOptions(opts: DgmoOptions = {}): ResolvedOptions {
   const mode: Mode = opts.mode ?? 'diagram';
@@ -133,6 +145,7 @@ export function resolveOptions(opts: DgmoOptions = {}): ResolvedOptions {
     background: opts.background ?? 'auto',
     showSource: opts.showSource ?? showcase,
     showCopy: opts.showCopy ?? showcase,
+    showExpand: opts.showExpand ?? showcase,
     showOpenInEditor: opts.showOpenInEditor ?? showcase,
     editorBaseUrl: opts.editorBaseUrl ?? 'https://online.diagrammo.app',
     wrapper: opts.wrapper ?? 'figure',

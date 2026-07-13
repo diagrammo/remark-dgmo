@@ -181,7 +181,7 @@
  * border so the code visibly belongs to the chart above it. The frame box
  * (border + padding) is RESERVED at all times — with the border transparent
  * while closed — so opening the panel only paints the border in. It never
- * reflows the diagram. `position: relative` anchors the overlay toolbar to
+ * reflows the diagram. position:relative anchors the overlay toolbar to
  * this box. */
 .dgmo:has(> .dgmo-source-wrap) {
   position: relative;
