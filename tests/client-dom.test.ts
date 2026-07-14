@@ -65,6 +65,65 @@ describe('client DOM behavior', () => {
     );
   });
 
+  it('collapses an open source panel when the pointer leaves the block', () => {
+    document.body.innerHTML = `
+      <div class="dgmo">
+        <div class="dgmo-svg"><svg></svg></div>
+        <details class="dgmo-source-wrap" open><summary class="dgmo-toolbar"></summary><div class="dgmo-source-inner"></div></details>
+      </div>
+      <div id="outside"></div>`;
+    bindDgmo();
+
+    const details = document.querySelector(
+      'details.dgmo-source-wrap'
+    ) as HTMLDetailsElement;
+    expect(details.open).toBe(true);
+
+    const outside = document.getElementById('outside')!;
+    details.dispatchEvent(
+      new MouseEvent('mouseout', { bubbles: true, relatedTarget: outside })
+    );
+    expect(details.open).toBe(false);
+  });
+
+  it('keeps the panel open while the pointer moves within the block', () => {
+    document.body.innerHTML = `
+      <div class="dgmo">
+        <div class="dgmo-svg"><svg></svg></div>
+        <details class="dgmo-source-wrap" open><summary class="dgmo-toolbar"></summary><div class="dgmo-source-inner"><span id="inner">x</span></div></details>
+      </div>`;
+    bindDgmo();
+
+    const details = document.querySelector(
+      'details.dgmo-source-wrap'
+    ) as HTMLDetailsElement;
+    const inner = document.getElementById('inner')!;
+    // Pointer moves from the summary to a child still inside the block.
+    details.dispatchEvent(
+      new MouseEvent('mouseout', { bubbles: true, relatedTarget: inner })
+    );
+    expect(details.open).toBe(true);
+  });
+
+  it('collapses the panel when focus leaves the block', () => {
+    document.body.innerHTML = `
+      <div class="dgmo">
+        <div class="dgmo-svg"><svg></svg></div>
+        <details class="dgmo-source-wrap" open><summary class="dgmo-toolbar" tabindex="0"></summary><div class="dgmo-source-inner"></div></details>
+      </div>
+      <button id="elsewhere">x</button>`;
+    bindDgmo();
+
+    const details = document.querySelector(
+      'details.dgmo-source-wrap'
+    ) as HTMLDetailsElement;
+    const elsewhere = document.getElementById('elsewhere')!;
+    details.dispatchEvent(
+      new FocusEvent('focusout', { bubbles: true, relatedTarget: elsewhere })
+    );
+    expect(details.open).toBe(false);
+  });
+
   it('tightens the svg viewBox to getBBox bounds with padding', () => {
     document.body.innerHTML = `
       <div class="dgmo-svg"><svg viewBox="0 0 1200 800"></svg></div>`;

@@ -67,6 +67,23 @@ export function bindDgmo(): void {
       },
       true
     );
+    // Auto-collapse an open source panel once the pointer AND focus have both
+    // left the block — the expanded code shouldn't linger after you move on.
+    // Delegated (the click handler is document-level too); `relatedTarget` is
+    // where the pointer/focus went, so a move to a child of the same block
+    // keeps it open.
+    document.addEventListener(
+      'mouseout',
+      (e) =>
+        collapseIdleSourcePanels((e as MouseEvent).relatedTarget as Node | null),
+      true
+    );
+    document.addEventListener(
+      'focusout',
+      (e) =>
+        collapseIdleSourcePanels((e as FocusEvent).relatedTarget as Node | null),
+      true
+    );
     clickHandlerBound = true;
   }
   tightenViewBoxes();
@@ -101,6 +118,27 @@ export function bindDgmo(): void {
     });
     themeObserverBound = true;
   }
+}
+
+/**
+ * Close any open `<details.dgmo-source-wrap>` whose block is no longer under
+ * the pointer and holds no focus. `movedTo` is the event's relatedTarget (the
+ * element the pointer/focus moved to); staying within the same block is a
+ * no-op. Belt-and-suspenders with `:hover` + `activeElement` so a mouse-out
+ * that still leaves focus inside (or vice-versa) keeps the panel open.
+ */
+function collapseIdleSourcePanels(movedTo: Node | null): void {
+  const open = document.querySelectorAll<HTMLDetailsElement>(
+    'details.dgmo-source-wrap[open]'
+  );
+  open.forEach((d) => {
+    const block = d.closest('.dgmo');
+    if (!block) return;
+    if (movedTo && block.contains(movedTo)) return;
+    if (block.contains(document.activeElement)) return;
+    if (block.matches(':hover')) return;
+    d.open = false;
+  });
 }
 
 async function handleToolbarBtnClick(e: Event): Promise<void> {
