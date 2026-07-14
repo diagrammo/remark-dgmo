@@ -230,11 +230,13 @@ function openDgmoLightbox(fromButton: Element): void {
 
   const wrappers = block.querySelectorAll('.dgmo-light, .dgmo-dark, .dgmo-svg');
   let svg: SVGSVGElement | null = null;
+  let bg: string | null = null;
   for (const w of Array.from(wrappers)) {
     if (window.getComputedStyle(w).display === 'none') continue;
     const found = w.querySelector('svg');
     if (found) {
       svg = found as SVGSVGElement;
+      bg = w.getAttribute('data-dgmo-bg');
       break;
     }
   }
@@ -256,6 +258,10 @@ function openDgmoLightbox(fromButton: Element): void {
 
   const host = document.createElement('div');
   host.className = 'dgmo-lightbox-svg';
+  // Always paint an opaque surface behind the enlarged diagram — transparent
+  // embeds strip the chart bg from the SVG, so without this the page shows
+  // through the expanded view. Use the block's own palette bg when stashed.
+  if (bg) host.style.background = bg;
   host.appendChild(clone);
 
   dialog.appendChild(closeBtn);
