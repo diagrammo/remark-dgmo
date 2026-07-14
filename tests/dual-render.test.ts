@@ -15,8 +15,8 @@ B -> C`;
 describe('dual-render (AC-CM1)', () => {
   it('emits both dgmo-light and dgmo-dark wrappers under default colorMode auto', async () => {
     const { html } = await renderDgmoBlock(SAMPLE, null);
-    expect(html).toMatch(/<div class="[^"]*\bdgmo-light\b[^"]*">\s*<svg/);
-    expect(html).toMatch(/<div class="[^"]*\bdgmo-dark\b[^"]*">\s*<svg/);
+    expect(html).toMatch(/<div class="[^"]*\bdgmo-light\b[^"]*"[^>]*>\s*<svg/);
+    expect(html).toMatch(/<div class="[^"]*\bdgmo-dark\b[^"]*"[^>]*>\s*<svg/);
   });
 
   it('the two SVGs have distinct background fills (first <rect> fill)', async () => {
@@ -24,10 +24,10 @@ describe('dual-render (AC-CM1)', () => {
 
     // Extract everything between dgmo-light and dgmo-dark wrappers.
     const lightMatch = html.match(
-      /<div class="[^"]*\bdgmo-light\b[^"]*">([\s\S]*?)<\/div>\s*<div class="[^"]*\bdgmo-dark\b/
+      /<div class="[^"]*\bdgmo-light\b[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<div class="[^"]*\bdgmo-dark\b/
     );
     const darkMatch = html.match(
-      /<div class="[^"]*\bdgmo-dark\b[^"]*">([\s\S]*?)<\/div>\s*<\/(?:figure|div)>/
+      /<div class="[^"]*\bdgmo-dark\b[^"]*"[^>]*>([\s\S]*?)<\/div>\s*<\/(?:figure|div)>/
     );
     expect(lightMatch).not.toBeNull();
     expect(darkMatch).not.toBeNull();

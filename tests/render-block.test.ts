@@ -106,8 +106,10 @@ describe('renderDgmoBlock (single-render path, colorMode: light)', () => {
       colorMode: 'light',
     });
     expect(html).toContain('dgmo--showcase');
+    // noSource drops the source listing, but the copy/expand/open buttons
+    // remain as an overlay toolbar (independent toolbar buttons, dgmo 0.51.0).
     expect(html).not.toContain('dgmo-pre');
-    expect(html).not.toContain('dgmo-toolbar');
+    expect(html).toContain('dgmo-toolbar');
   });
 
   it('uses custom editorBaseUrl', async () => {
