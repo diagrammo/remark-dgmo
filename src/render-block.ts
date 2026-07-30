@@ -35,7 +35,14 @@ export async function renderDgmoBlock(
   source: string,
   meta: string | null | undefined,
   integrationOptions: DgmoOptions = {},
-  location?: BlockLocation
+  location?: BlockLocation,
+  /**
+   * Markup extras the caller controls. Today this carries the cloud-reference
+   * markers (story 10.4) — passed through as block options rather than patched
+   * onto the emitted HTML, because a wrapper editing rendered markup by regex is
+   * how a rendering pipeline starts having two of them.
+   */
+  extra: { dataAttributes?: Record<string, string> } = {}
 ): Promise<RenderBlockResult> {
   const block = parseFenceMeta(meta);
   const base = resolveOptions(integrationOptions);
@@ -69,11 +76,40 @@ export async function renderDgmoBlock(
     className: opts.className,
     legacyClassNames: opts.legacyClassNames,
     onWarn: (message) => {
-       
       console.warn(`[remark-dgmo] ${message}${locationSuffix(location)}`);
     },
   };
   if (block.title !== undefined) blockOptions.title = block.title;
+  if (extra.dataAttributes) {
+    blockOptions.dataAttributes = {
+      ...extra.dataAttributes,
+      // A cloud-referenced block also carries the options it was baked with, so
+      // a client refresh re-renders the diagram that is on the page rather than
+      // reverting to defaults. A diagram that silently changes palette when it
+      // refreshes reads as a bug, not as freshness.
+      //
+      // Written HERE because this is where per-block fence meta has already
+      // been folded into the integration's options — the effective values exist
+      // nowhere else, and reconstructing them in the caller would be a second
+      // copy of the merge above.
+      ...(extra.dataAttributes['dgmo-ref']
+        ? {
+            'dgmo-ref-opts': JSON.stringify({
+              mode: opts.mode,
+              palette: opts.palette,
+              colorMode: opts.colorMode,
+              background: opts.background,
+              showSource: opts.showSource,
+              showCopy: opts.showCopy,
+              showExpand: opts.showExpand,
+              showOpenInEditor: opts.showOpenInEditor,
+              className: opts.className,
+              wrapper: opts.wrapper,
+            }),
+          }
+        : {}),
+    };
+  }
 
   return renderStandardBlock(source, blockOptions);
 }

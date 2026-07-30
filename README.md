@@ -240,6 +240,68 @@ Each toolbar button is independent — e.g. ` ```dgmo showcase noSource noExpand
 keeps just the copy + open-in-editor buttons, and ` ```dgmo copy ` adds only a
 copy button to an otherwise bare diagram.
 
+## Cloud references (opt-in)
+
+A fence can name a diagram living in [Diagrammo Cloud](https://diagrammo.app)
+instead of carrying its own source:
+
+````md
+```dgmo
+cloud dgm_01HQ3RSTUV
+```
+````
+
+The build fetches that diagram's source, renders it exactly like a pasted one
+(fence-meta and per-block overrides all still apply), and writes what it fetched
+into `.dgmo/references/<id>.json`. **Commit that directory.** Three spellings are
+accepted — `cloud <id>` in a fence, `![[cloud:<id>]]` in a note, or the plain
+share URL.
+
+```js
+// off by default
+remarkDgmo({ references: { enabled: true } });
+```
+
+**Only published diagrams can be referenced.** A private diagram is not
+fetchable at all — there are no tokens, no signed links, and no origin
+allowlists to configure, which is also why every referenced byte is cacheable.
+
+### Why the cache is committed
+
+So that our availability is never your build's problem. A clean CI checkout
+renders from the committed copy if we are unreachable, and a diagram changing
+shows up in your pull request as a source diff you can read.
+
+| What happened                    | Your build                        | Your page                 |
+| -------------------------------- | --------------------------------- | ------------------------- |
+| all well                         | writes the cache                  | the current diagram       |
+| we're unreachable, cache present | succeeds, with a warning          | last known good           |
+| we're unreachable, no cache      | **fails**                         | —                         |
+| unknown id, never cached         | **fails** (it can only be a typo) | —                         |
+| id gone, cache present           | succeeds, with a warning          | last known good           |
+| the author unshared it           | succeeds, with a warning          | a "no longer shared" card |
+
+Set `references: { offline: true }` to skip the network entirely and build from
+the cache alone.
+
+### ⚠️ Content-Security-Policy
+
+If your site sets a CSP, it must allow `connect-src https://api.diagrammo.app`.
+Without it the diagram still renders — it was baked at build time — but it will
+**never refresh**, and nothing on the page can tell you so, because the report
+would be blocked too. This is the one thing to get right before shipping
+references.
+
+### How the refresh works
+
+`remark-dgmo/client.js` checks, once the page is idle, whether any referenced
+diagram has moved since the build. Almost always it hasn't, and the check costs
+one edge-cached request. When one has, the client loads the renderer **on
+demand** — never on pages that don't need it — and swaps the diagram in. If it
+can't do that safely (the renderer version disagrees with the one that baked the
+page, the new diagram would reflow the layout, the script can't load), it leaves
+your diagram alone and adds a small link to the live one instead.
+
 ## Working reference site
 
 For an end-to-end example of `remark-dgmo` running inside a real

@@ -1,3 +1,11 @@
+import {
+  type ReferenceOptions,
+  type ResolvedReferenceOptions,
+  resolveReferenceOptions,
+} from './reference-resolve.js';
+
+export type { ReferenceOptions } from './reference-resolve.js';
+
 export type Mode = 'diagram' | 'showcase';
 
 export type Theme = 'light' | 'dark' | 'transparent';
@@ -115,12 +123,31 @@ export interface DgmoOptions {
    * `Cannot handle unknown node "raw"`; this option is the fix.
    */
   mdx?: boolean;
+
+  /**
+   * Resolve cloud references — a ```dgmo fence whose body is `cloud abc123`,
+   * naming a diagram in Diagrammo Cloud instead of carrying its own source.
+   *
+   * **Off by default**, and that default is load-bearing: this module is shared
+   * by every host wrapper, and references are piloting on exactly one of them.
+   * With it off, a cloud fence renders as it always has (an error block) and no
+   * wrapper's output changes by a byte.
+   *
+   * See `reference-resolve.ts` for what happens when the fetch goes wrong — that
+   * table is the part of this feature worth reading.
+   */
+  references?: ReferenceOptions;
 }
 
 export type ResolvedOptions = Required<
   Omit<
     DgmoOptions,
-    'showSource' | 'showCopy' | 'showExpand' | 'showOpenInEditor' | 'mdx'
+    | 'showSource'
+    | 'showCopy'
+    | 'showExpand'
+    | 'showOpenInEditor'
+    | 'mdx'
+    | 'references'
   >
 > & {
   showSource: boolean;
@@ -128,6 +155,7 @@ export type ResolvedOptions = Required<
   showExpand: boolean;
   showOpenInEditor: boolean;
   mdx: boolean;
+  references: ResolvedReferenceOptions;
 };
 
 /**
@@ -152,5 +180,6 @@ export function resolveOptions(opts: DgmoOptions = {}): ResolvedOptions {
     className: opts.className ?? 'dgmo',
     legacyClassNames: opts.legacyClassNames ?? [],
     mdx: opts.mdx ?? false,
+    references: resolveReferenceOptions(opts.references),
   };
 }

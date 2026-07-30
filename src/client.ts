@@ -35,6 +35,9 @@ import { startCountdowns } from '@diagrammo/dgmo/countdown';
 // Same deal for the `clock` chart type — a sibling ~1 KB 1s ticker on its own
 // subpath. Updates the baked `data-dgmo-clock` analog/digital world-clock rows.
 import { startClocks } from '@diagrammo/dgmo/clock';
+// Cloud references (story 10.4). Small and static; the RENDERER it may need is
+// dynamically imported, and only once a diagram is known to have moved.
+import { refreshCloudReferences } from './reference-refresh.js';
 
 let clickHandlerBound = false;
 let themeObserverBound = false;
@@ -75,13 +78,17 @@ export function bindDgmo(): void {
     document.addEventListener(
       'mouseout',
       (e) =>
-        collapseIdleSourcePanels((e as MouseEvent).relatedTarget as Node | null),
+        collapseIdleSourcePanels(
+          (e as MouseEvent).relatedTarget as Node | null
+        ),
       true
     );
     document.addEventListener(
       'focusout',
       (e) =>
-        collapseIdleSourcePanels((e as FocusEvent).relatedTarget as Node | null),
+        collapseIdleSourcePanels(
+          (e as FocusEvent).relatedTarget as Node | null
+        ),
       true
     );
     clickHandlerBound = true;
@@ -107,6 +114,12 @@ export function bindDgmo(): void {
   // finished the layout pass that the display-change triggered. Without
   // it, MutationObserver fires synchronously before layout and getBBox
   // still returns 0 on the freshly-visible element.
+  // Cloud references: check whether any referenced diagram has moved since the
+  // build. Fires and forgets — a refresh must never be able to delay or break
+  // the page it runs on — and returns immediately on a page with no references,
+  // which is every page on the wrappers that are not piloting this.
+  void refreshCloudReferences();
+
   if (!themeObserverBound) {
     const html = document.documentElement;
     const reTighten = () => {

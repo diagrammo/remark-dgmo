@@ -1,8 +1,18 @@
 import { visit } from 'unist-util-visit';
 import type { Root, Code, Html, Parent } from 'mdast';
 import { errorBlockHtml } from '@diagrammo/dgmo/block';
+import {
+  parseCloudReference,
+  type CloudReference,
+} from '@diagrammo/dgmo/cloud-reference';
 import { renderDgmoBlock, type BlockLocation } from './render-block.js';
-import type { DgmoOptions } from './options.js';
+import { resolveOptions, type DgmoOptions } from './options.js';
+import {
+  ReferenceBuildError,
+  resolveReferences,
+  type ReferenceOutcome,
+} from './reference-resolve.js';
+import { tombstoneCardHtml } from './tombstone-card.js';
 import { htmlToMdxJsxNode } from './mdx-node.js';
 
 export type RemarkDgmoOptions = DgmoOptions;
@@ -11,6 +21,8 @@ interface FencePayload {
   source: string;
   meta: string | null;
   location: BlockLocation;
+  /** Set when the fence body named a cloud diagram instead of carrying source. */
+  reference?: CloudReference;
 }
 
 interface Target {
@@ -40,6 +52,8 @@ export default function remarkDgmo(options: RemarkDgmoOptions = {}) {
     tree: Root,
     file?: { path?: string }
   ): Promise<void> {
+    const references = resolveOptions(options).references;
+
     const targets: Target[] = [];
     visit(tree, 'code', (node: Code, index, parent) => {
       if (node.lang !== 'dgmo') return;
@@ -48,22 +62,47 @@ export default function remarkDgmo(options: RemarkDgmoOptions = {}) {
       if (file?.path) loc.path = file.path;
       const line = node.position?.start.line;
       if (typeof line === 'number') loc.line = line;
-      targets.push({
-        parent: parent as Parent,
-        index,
-        payload: { source: node.value, meta: node.meta ?? null, location: loc },
-      });
+      const payload: FencePayload = {
+        source: node.value,
+        meta: node.meta ?? null,
+        location: loc,
+      };
+      // A cloud reference is recognised only when the feature is ON. Off, the
+      // body falls through to the renderer exactly as it does today — which
+      // produces an error card, and that is the correct answer for a site that
+      // has not enabled references.
+      if (references.enabled) {
+        const ref = parseCloudReference(node.value);
+        if (ref) payload.reference = ref;
+      }
+      targets.push({ parent: parent as Parent, index, payload });
     });
     if (targets.length === 0) return;
 
+    // Resolved first, as a batch: one fetch per distinct id no matter how many
+    // blocks name it, with a concurrency cap, because a rate-limited endpoint
+    // cannot tell a forty-page docs build from abuse.
+    const resolved = await resolveReferences(
+      targets
+        .filter((t) => t.payload.reference)
+        .map((t) => ({
+          ref: t.payload.reference as CloudReference,
+          location: t.payload.location,
+        })),
+      references
+    );
+
+    // A reference that could not be resolved AT ALL fails the build, and it
+    // fails it here rather than per-block: the errors are collected across the
+    // batch so one bad id doesn't cancel the fetches already in flight, and the
+    // first one is thrown with its file and line attached.
+    for (const outcome of resolved.values()) {
+      if (outcome instanceof ReferenceBuildError) throw locatedError(outcome);
+    }
+
     const rendered = await Promise.all(
       targets.map((t) =>
-        renderDgmoBlock(
-          t.payload.source,
-          t.payload.meta,
-          options,
-          t.payload.location
-        ).catch((err) => ({
+        renderTarget(t, resolved, options).catch((err) => ({
           html: errorBlockHtml(err, t.payload.source, options),
           diagnostics: [],
         }))
@@ -87,4 +126,80 @@ export default function remarkDgmo(options: RemarkDgmoOptions = {}) {
       t.parent.children[t.index] = replacement as unknown as Html;
     }
   };
+}
+
+/**
+ * Render one fence — a pasted diagram, or a resolved cloud reference.
+ *
+ * A reference goes through the SAME `renderDgmoBlock` call as pasted source, so
+ * the two are indistinguishable in the output. That is the whole design: every
+ * showcase feature, every palette, every fence-meta token keeps working on a
+ * reference without being reimplemented for it.
+ */
+async function renderTarget(
+  target: Target,
+  resolved: Map<string, ReferenceOutcome | ReferenceBuildError>,
+  options: RemarkDgmoOptions
+): Promise<{ html: string; diagnostics: unknown[] }> {
+  const { reference, source, meta, location } = target.payload;
+  if (!reference) {
+    return renderDgmoBlock(source, meta, options, location);
+  }
+
+  const outcome = resolved.get(reference.id);
+  // Unresolvable references already threw above; anything missing here is a
+  // bug in the batch, not a user error.
+  if (!outcome || outcome instanceof ReferenceBuildError) {
+    throw outcome ?? new Error(`Unresolved cloud reference ${reference.id}`);
+  }
+
+  if (outcome.kind === 'tombstone') {
+    warn(outcome.warning, location);
+    const resolvedOpts = resolveOptions(options);
+    return {
+      html: tombstoneCardHtml({
+        className: resolvedOpts.className,
+        wrapper: resolvedOpts.wrapper,
+        legacyClassNames: resolvedOpts.legacyClassNames,
+      }),
+      diagnostics: [],
+    };
+  }
+
+  if (outcome.warning) warn(outcome.warning, location);
+
+  // The markers the client refresh reads back (story 10.4 P11): the id, the
+  // revision this page was baked from, and the renderer version that baked it.
+  // Nothing else — no source, no space, no author.
+  return renderDgmoBlock(outcome.source, meta, options, location, {
+    dataAttributes: {
+      'dgmo-ref': reference.id,
+      'dgmo-ref-updated': String(outcome.updatedAt),
+      'dgmo-ref-version': outcome.dgmoVersion,
+    },
+  });
+}
+
+function warn(message: string, location: BlockLocation): void {
+  console.warn(`[remark-dgmo] ${message}${locationSuffix(location)}`);
+}
+
+/** Put the file and line INTO the message — a build error naming only an id sends someone grepping. */
+function locatedError(err: ReferenceBuildError): ReferenceBuildError {
+  const suffix = locationSuffix(err.location);
+  if (!suffix) return err;
+  return new ReferenceBuildError(
+    `${err.message}${suffix}`,
+    err.id,
+    err.location
+  );
+}
+
+function locationSuffix(location: BlockLocation | undefined): string {
+  if (!location) return '';
+  if (location.path && location.line)
+    return ` (${location.path}:${String(location.line)})`;
+  if (location.path) return ` (${location.path})`;
+  if (location.line) return ` (line ${String(location.line)})`;
+  return '';
 }
