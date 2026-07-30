@@ -296,11 +296,27 @@ references.
 
 `remark-dgmo/client.js` checks, once the page is idle, whether any referenced
 diagram has moved since the build. Almost always it hasn't, and the check costs
-one edge-cached request. When one has, the client loads the renderer **on
-demand** — never on pages that don't need it — and swaps the diagram in. If it
-can't do that safely (the renderer version disagrees with the one that baked the
-page, the new diagram would reflow the layout, the script can't load), it leaves
-your diagram alone and adds a small link to the live one instead.
+one edge-cached request.
+
+When one has, the default is to **say so** — a small link to the live diagram —
+rather than to re-render it. That default is about your bundle, not about
+laziness: re-rendering needs the dgmo renderer in the browser, and a bundler
+that can see the import ships it whether or not it is ever used. On this repo's
+own Astro fixture the difference is **1 chunk / 8.9 KB gzipped versus 88 chunks
+/ 634 KB**. Lazy for your readers; not free for your `dist/`.
+
+If you want the swap anyway — a docs site that publishes far more often than it
+rebuilds is the case that wants it — opt in:
+
+```js
+import 'remark-dgmo/client.js';
+import 'remark-dgmo/client-render.js'; // adds the renderer to your bundle
+```
+
+Even then, the client refuses a swap it cannot make safely: a renderer version
+that disagrees with the one that baked the page, or a new diagram that would
+reflow your layout. Those fall back to the same small link, and your diagram is
+left exactly as it was.
 
 ## Working reference site
 

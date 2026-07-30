@@ -11,13 +11,22 @@
  * referenced diagram against an edge-cached endpoint, and the overwhelmingly
  * common answer is "unchanged", which costs no work at all.
  *
- * 🔴 **The renderer is `import()`ed only after a diagram is known to have moved,
- * and that is a hard constraint rather than a preference.** `astro-dgmo`'s own
- * build assertion fails if the renderer's jsdom sentinel appears in a page
- * chunk, its committed bundle baseline is 764 gzipped BYTES against a 100 KB
- * budget, and dgmo's browser render bundle is ~1.9 MB. A static import here
- * would put two megabytes of renderer into every docs page in exchange for a
- * refresh that fires on almost none of them.
+ * 🔴 **There is no renderer in this module, not even behind a dynamic
+ * `import()`, and that is the whole reason the file is shaped this way.**
+ *
+ * Measured on `astro-dgmo`'s own fixture, 2026-07-30: a plain
+ * `await import('@diagrammo/dgmo/block')` here — dynamic, on a branch that
+ * almost never runs — took the built site from **1 chunk / 7,990 gzipped bytes
+ * to 90 chunks / 634,199**. Bundlers resolve a static-analyzable dynamic import
+ * at BUILD time; "lazy" describes when the reader downloads it, not whether the
+ * adopter ships it. Readers would not have paid for it, but every adopter's
+ * `dist/` would, and the wrapper's own size assertion fails on the spot.
+ *
+ * So the default is to **notice, not to re-render**: a moved diagram gets a
+ * small link to the live one. A site that genuinely wants the swap opts in by
+ * loading `remark-dgmo/client-render.js`, which is the only module that
+ * mentions the renderer — and therefore the only one whose graph a bundler can
+ * follow.
  *
  * ## What it must never do
  *
@@ -53,10 +62,49 @@ export interface ReferenceRefreshOptions {
 }
 
 export interface RendererLike {
-  renderDgmoBlock(
+  renderDgmoBlock: (
     source: string,
     options?: Record<string, unknown>
-  ): Promise<{ html: string }>;
+  ) => Promise<{ html: string }>;
+}
+
+/**
+ * The opt-in renderer, registered by `remark-dgmo/client-render.js`.
+ *
+ * A registry rather than an import, because this module must stay free of any
+ * reference to the render package — a bundler that can see one pulls its whole
+ * graph into every adopter's build whether or not a diagram ever changes.
+ *
+ * Held on `globalThis` rather than in a module variable, and that is not
+ * laziness: hosts inline these two files as SEPARATE script sources (Astro's
+ * `injectScript` reads each one's text), so each carries its own copy of this
+ * module and a module-level variable set by one would be invisible to the
+ * other. A global is the only handshake that survives being bundled twice.
+ */
+const REGISTRY_KEY = '__dgmoReferenceRenderer';
+
+type RegistryHost = { [REGISTRY_KEY]?: (() => Promise<RendererLike>) | null };
+
+export function setReferenceRenderer(
+  load: (() => Promise<RendererLike>) | null
+): void {
+  (globalThis as RegistryHost)[REGISTRY_KEY] = load;
+}
+
+function registeredRenderer(): (() => Promise<RendererLike>) | null {
+  return (globalThis as RegistryHost)[REGISTRY_KEY] ?? null;
+}
+
+/**
+ * `client-render.js` fires this once it has registered the renderer. Listening
+ * for it is what lets the opt-in module stay import-free: it cannot call into
+ * this one, so it announces itself instead, and a diagram that moved gets its
+ * swap on this page load rather than the next.
+ */
+if (typeof globalThis.addEventListener === 'function') {
+  globalThis.addEventListener('dgmo:renderer-ready', () => {
+    void refreshCloudReferences();
+  });
 }
 
 interface SourceResponse {
@@ -175,13 +223,17 @@ async function swapOrMark(
   source: string,
   ctx: ReferenceRefreshOptions & { doc: Document }
 ): Promise<void> {
+  const load = ctx.loadRenderer ?? registeredRenderer();
+  // The default path, and the one almost every site takes: nobody registered a
+  // renderer, so say the diagram moved and leave it alone.
+  if (!load) {
+    markUpdated(el, id, ctx);
+    return;
+  }
+
   let renderer: RendererLike;
   try {
-    // 🔴 The one dynamic import. It happens here — after a diagram is known to
-    // have moved — and nowhere earlier.
-    renderer =
-      (await ctx.loadRenderer?.()) ??
-      ((await import('@diagrammo/dgmo/block')) as unknown as RendererLike);
+    renderer = await load();
   } catch {
     markUpdated(el, id, ctx); // renderer unavailable: label it, don't break it
     return;

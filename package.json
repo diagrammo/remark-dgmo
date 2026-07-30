@@ -43,6 +43,7 @@
       "default": "./dist/remark-plugin.js"
     },
     "./client.js": "./dist/client.js",
+    "./client-render.js": "./dist/client-render.js",
     "./client.css": "./dist/client.css",
     "./theme-nord.css": "./dist/theme-nord.css",
     "./client-css": {

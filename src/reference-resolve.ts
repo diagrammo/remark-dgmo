@@ -82,6 +82,21 @@ export interface ReferenceOptions {
    * are not piloting this change behaviour by zero bytes.
    */
   enabled?: boolean;
+  /**
+   * What a reader's browser does when a referenced diagram has moved since the
+   * build. **Default `notify`.**
+   *
+   * - `notify` — a small link to the live diagram. Costs nothing: the base
+   *   client has no renderer in it, so nothing extra is bundled.
+   * - `render` — re-render the new revision in place. The host must also load
+   *   `remark-dgmo/client-render.js`, which is what pulls the render graph into
+   *   the site's build. Measured on the astro fixture: **1 chunk / 7,990 gzipped
+   *   bytes → 90 chunks / 634,199.** Lazy for the reader, not free for the site.
+   *
+   * Consumed by the WRAPPER (to decide which scripts to inject), not by the
+   * transformer — the build output is identical either way.
+   */
+  refresh?: 'notify' | 'render';
   /** Cloud API origin. Default: the public one. */
   base?: string;
   /** Committed cache directory, relative to the project root. */
@@ -102,6 +117,7 @@ export interface ReferenceOptions {
 
 export interface ResolvedReferenceOptions {
   enabled: boolean;
+  refresh: 'notify' | 'render';
   base: string | undefined;
   cacheDir: string;
   offline: boolean;
@@ -150,6 +166,7 @@ export function resolveReferenceOptions(
 ): ResolvedReferenceOptions {
   return {
     enabled: opts.enabled ?? false,
+    refresh: opts.refresh ?? 'notify',
     base: opts.base,
     cacheDir: opts.cacheDir ?? DEFAULT_CACHE_DIR,
     offline: opts.offline ?? false,

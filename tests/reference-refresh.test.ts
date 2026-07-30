@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   refreshCloudReferences,
   type RendererLike,
+  setReferenceRenderer,
 } from '../src/reference-refresh.js';
 
 const ID = 'dgm_01HQ3';
@@ -247,5 +248,70 @@ describe('a refresh can never break the page it runs on', () => {
     }
 
     expect(el.querySelectorAll('.dgmo-updated')).toHaveLength(1);
+  });
+});
+
+describe('the renderer is opt-in, and the default bundle cannot reach it', () => {
+  it('notifies instead of swapping when no renderer is registered', async () => {
+    // The default path. `client.js` registers nothing, so a moved diagram is
+    // labelled rather than re-rendered — and, more to the point, the render
+    // graph is absent from the bundle entirely.
+    const el = block({
+      'data-dgmo-ref': ID,
+      'data-dgmo-ref-updated': '100',
+      'data-dgmo-ref-version': '0.56.0',
+    });
+
+    await refreshCloudReferences({
+      fetchImpl: source({ updatedAt: 300 }),
+      schedule: now,
+    });
+
+    expect(el.querySelector('.dgmo-updated')).not.toBeNull();
+    expect(el.dataset['dgmoRefRefreshed']).toBeUndefined();
+  });
+
+  it('swaps once a renderer IS registered, then stops when it is removed', async () => {
+    setReferenceRenderer(() =>
+      Promise.resolve({
+        renderDgmoBlock: () =>
+          Promise.resolve({
+            html: '<figure><svg viewBox="0 0 100 50"><title>fresh</title></svg></figure>',
+          }),
+      })
+    );
+    const el = block({
+      'data-dgmo-ref': ID,
+      'data-dgmo-ref-updated': '100',
+      'data-dgmo-ref-version': '0.56.0',
+    });
+
+    await refreshCloudReferences({
+      fetchImpl: source({ updatedAt: 300 }),
+      schedule: now,
+    });
+    expect(el.innerHTML).toContain('fresh');
+
+    setReferenceRenderer(null);
+  });
+
+  it('never mentions the render package in the base client bundle', async () => {
+    // 🔴 The measurement that forced this shape: a static-analyzable dynamic
+    // import in `client.js` made astro-dgmo's fixture emit the entire renderer
+    // graph — 1 chunk / 7,990 gzipped bytes became 90 chunks / 634,199.
+    const fs = await import('node:fs');
+    const path = await import('node:path');
+    const url = await import('node:url');
+    const here = path.dirname(url.fileURLToPath(import.meta.url));
+    const src = fs.readFileSync(
+      path.resolve(here, '../src/reference-refresh.ts'),
+      'utf8'
+    );
+    // Comments stripped first — this file EXPLAINS the constraint at length,
+    // and an assertion that its own prose trips is an assertion nobody keeps.
+    const code = src
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/^\s*\/\/.*$/gm, '');
+    expect(code).not.toMatch(/import\(\s*['"]@diagrammo\/dgmo/);
   });
 });
