@@ -37,7 +37,13 @@ Referenced diagrams need `connect-src https://api.diagrammo.app` in a host's CSP
 
 This publishes **before** the host wrappers and must be live on npm first — their CI installs the new version at build time, so a wrapper tagged in the same breath builds against the old one.
 
-⚠️ **A caret on a `0.x` version locks the minor**, so every wrapper needs an explicit dependency bump on each minor here — `^0.10.0` will not take 0.11.0. As of 2026-07-31 only `astro-dgmo` tracks 0.11.0 (cloud references); the other four still pin `remark-dgmo: ^0.10.0` and an older dgmo peer floor. Landing a minor here is not done until those bumps are done.
+⚠️ **A caret on a `0.x` version locks the minor**, so every wrapper needs an explicit dependency bump on each minor here — `^0.10.0` will not take 0.11.0. Landing a minor here is not done until those bumps are done. All five wrappers are caught up as of 2026-07-31 (`remark-dgmo ^0.11.0`, peer `@diagrammo/dgmo >=0.57.0 <1`) — check with the `jq` sweep rather than trusting this sentence:
+
+```bash
+for d in astro-dgmo docusaurus-plugin-dgmo fumadocs-dgmo nextra-dgmo vitepress-dgmo; do
+  jq -r --arg d "$d" '"\($d) remark=\(.dependencies["remark-dgmo"]) peer=\(.peerDependencies["@diagrammo/dgmo"])"' ../$d/package.json
+done
+```
 
 ## Before committing
 
