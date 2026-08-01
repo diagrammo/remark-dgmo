@@ -1,5 +1,5 @@
 /**
- * Cloud references at build time (story 10.4).
+ * Live links at build time (story 10.4).
  *
  * The failure table is the deliverable, so it gets a test per row. The rows that
  * matter most are the two asymmetric ones: a build must not fail when a cache
@@ -179,6 +179,37 @@ describe('the build fails when nothing can answer', () => {
       resolveReference(REF, opts(fetchImpl, fs, { offline: true }))
     ).rejects.toThrow(/offline/);
     expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it('AC20: offline WITH a populated cache succeeds and never touches the network', async () => {
+    // The escape hatch has to work on the first try, because on-by-default is
+    // what sends people looking for it.
+    const { fs } = memFs({ [PATH]: cached() });
+    const fetchImpl = vi.fn() as unknown as typeof fetch;
+
+    const out = await resolveReference(
+      REF,
+      opts(fetchImpl, fs, { offline: true })
+    );
+
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(out.kind).toBe('source');
+    if (out.kind === 'source') expect(out.source).toContain('Cached');
+  });
+});
+
+describe('defaults', () => {
+  it('AC17: live links resolve unless a site turns them off', async () => {
+    expect(resolveReferenceOptions().enabled).toBe(true);
+  });
+
+  it('AC19: refresh stays `notify` — turning the feature FULLY on is 80x', () => {
+    // `render` makes the host load the client renderer, which took the astro
+    // fixture from 1 chunk / 7,990 gzipped bytes to 90 chunks / 634,199. The
+    // default flip is about resolving at BUILD time; it must not drag the
+    // render graph into every adopter's bundle as a side effect.
+    expect(resolveReferenceOptions().refresh).toBe('notify');
+    expect(resolveReferenceOptions({ enabled: true }).refresh).toBe('notify');
   });
 });
 

@@ -240,27 +240,31 @@ Each toolbar button is independent — e.g. ` ```dgmo showcase noSource noExpand
 keeps just the copy + open-in-editor buttons, and ` ```dgmo copy ` adds only a
 copy button to an otherwise bare diagram.
 
-## Cloud references (opt-in)
+## Live links (on by default)
 
 A fence can name a diagram living in [Diagrammo Cloud](https://diagrammo.app)
 instead of carrying its own source:
 
 ````md
 ```dgmo
-cloud dgm_01HQ3RSTUV
+live-link dgm_01HQ3RSTUV
 ```
 ````
 
 The build fetches that diagram's source, renders it exactly like a pasted one
 (fence-meta and per-block overrides all still apply), and writes what it fetched
 into `.dgmo/references/<id>.json`. **Commit that directory.** Three spellings are
-accepted — `cloud <id>` in a fence, `![[cloud:<id>]]` in a note, or the plain
-share URL.
+accepted — `live-link <id>` in a fence, `![[live-link:<id>]]` in a note, or the
+plain share URL.
 
 ```js
-// off by default
-remarkDgmo({ references: { enabled: true } });
+// on by default — this turns it OFF
+remarkDgmo({ liveLink: { enabled: false } });
 ```
+
+Switched off, a live-link fence renders a small card naming the diagram, with a
+hover link through to it, and the build warns naming the file and line. Nothing
+is fetched. See the [live links guide](https://diagrammo.app/docs/live-links/).
 
 **Only published diagrams can be referenced.** A private diagram is not
 fetchable at all — there are no tokens, no signed links, and no origin
@@ -281,7 +285,7 @@ shows up in your pull request as a source diff you can read.
 | id gone, cache present           | succeeds, with a warning          | last known good           |
 | the author unshared it           | succeeds, with a warning          | a "no longer shared" card |
 
-Set `references: { offline: true }` to skip the network entirely and build from
+Set `liveLink: { offline: true }` to skip the network entirely and build from
 the cache alone.
 
 ### ⚠️ Content-Security-Policy
@@ -290,7 +294,7 @@ If your site sets a CSP, it must allow `connect-src https://api.diagrammo.app`.
 Without it the diagram still renders — it was baked at build time — but it will
 **never refresh**, and nothing on the page can tell you so, because the report
 would be blocked too. This is the one thing to get right before shipping
-references.
+live links.
 
 ### How the refresh works
 

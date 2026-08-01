@@ -1,5 +1,65 @@
 # Changelog
 
+## Unreleased
+
+**🔴 Two breaking changes, plus a default flip.** All three land together and all
+three are visible to a site that upgrades and changes nothing.
+
+**1. The fence keyword is `live-link`, not `cloud`.**
+
+````md
+```dgmo
+live-link dgm_01HQ3RSTUV
+```
+````
+
+`cloud <id>` no longer resolves — it is not deprecated, it simply stops being a
+live link. Same for the note spelling: `![[cloud:<id>]]` becomes
+`![[live-link:<id>]]`. `cloud` named *where the thing lives*; `live-link` names
+*what it is*, and it is the phrase the publish dialog itself uses, so one word
+now spans both sides of the exchange.
+
+**2. The option is `liveLink`, not `references`.**
+
+```js
+remarkDgmo({ liveLink: { enabled: false } });
+```
+
+Named for the word people type in the fence. It also resolves a collision: in
+Diagrammo Cloud a *reference* already means a third-party site embedding a
+published diagram, and the two senses sat a paragraph apart in this package.
+
+**3. 🔴 Live links now resolve by DEFAULT.** A site that upgrades and does
+nothing will start fetching from `api.diagrammo.app` at build time, and a
+`.dgmo/references/` directory will appear in the repository wanting to be
+committed. That is correct by design — the cache belongs in your repo so a clean
+CI checkout never depends on our uptime, and a diagram changing arrives as a
+reviewable diff — but it is an unexplained directory until you know why it is
+there.
+
+The old default was `false`, so wrappers that were not piloting the feature
+changed behaviour by zero bytes. Pre-1.0 that promise costs more than it
+protects: a pointer that does not resolve is not a feature someone opted into,
+it is a broken page. Turning it off is now a choice a site owner makes:
+
+```js
+remarkDgmo({ liveLink: { enabled: false } });
+```
+
+On that path a live-link fence renders the **reference card** — the same card the
+CLI and the desktop app draw — with a hover-revealed link to the live diagram,
+and the build logs a warning naming the option and the source line. It is no
+longer an error block; since `live-link` became a real chart type, calling a
+valid fence broken would take deliberate work.
+
+`refresh` is unchanged and still defaults to `notify`. Turning live links on is
+cheap; turning them *fully* on is not — `render` pulls the client renderer into
+your bundle, which took the astro fixture from 1 chunk / 7,990 gzipped bytes to
+90 chunks / 634,199.
+
+**Requires `@diagrammo/dgmo` 0.58.0 or later**, which is where `live-link`
+became a chart type.
+
 ## 0.11.0
 
 **Cloud references — point a fence at a diagram instead of pasting one.**

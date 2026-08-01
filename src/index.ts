@@ -42,6 +42,12 @@ export type {
   ReferenceOutcome,
 } from './reference-resolve.js';
 export { TOMBSTONE_TEXT, tombstoneCardHtml } from './tombstone-card.js';
+export {
+  LIVE_LINK_AFFORDANCE_TEXT,
+  LIVE_LINK_DOCS_URL,
+  liveLinkOffWarning,
+  wrapLiveLinkOff,
+} from './live-link-off.js';
 
 export {
   adaptClientCssToClassToggle,

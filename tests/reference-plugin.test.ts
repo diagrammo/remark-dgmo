@@ -1,5 +1,5 @@
 /**
- * The transformer half of cloud references (story 10.4): interception, the
+ * The transformer half of live links (story 10.4): interception, the
  * off-by-default guarantee, the markers a refresh reads back, and what a
  * withdrawn reference turns into.
  */
@@ -51,33 +51,33 @@ const okFetch = (status = 200) =>
     )
   ) as unknown as typeof fetch;
 
-const references = (over: Record<string, unknown> = {}) => ({
+const liveLink = (over: Record<string, unknown> = {}) => ({
   enabled: true,
   fetchImpl: okFetch(),
   fs: memFs(),
   ...over,
 });
 
-describe('a cloud reference renders as an ordinary block', () => {
+describe('a live link renders as an ordinary block', () => {
   it('resolves the fence body and renders the fetched source', async () => {
-    const t = tree(`cloud ${ID}`);
-    await remarkDgmo({ colorMode: 'light', references: references() })(t);
+    const t = tree(`live-link ${ID}`);
+    await remarkDgmo({ colorMode: 'light', liveLink: liveLink() })(t);
 
     expect(html(t)).toContain('<svg');
     expect(html(t)).toContain('dgmo--diagram');
   });
 
   it('keeps fence meta working — the body says WHICH, the meta says HOW', async () => {
-    const t = tree(`cloud ${ID}`, 'showcase');
-    await remarkDgmo({ colorMode: 'light', references: references() })(t);
+    const t = tree(`live-link ${ID}`, 'showcase');
+    await remarkDgmo({ colorMode: 'light', liveLink: liveLink() })(t);
 
     expect(html(t)).toContain('dgmo--showcase');
     expect(html(t)).toContain('dgmo-copy');
   });
 
   it('stamps the markers a refresh needs, and nothing else', async () => {
-    const t = tree(`cloud ${ID}`);
-    await remarkDgmo({ colorMode: 'light', references: references() })(t);
+    const t = tree(`live-link ${ID}`);
+    await remarkDgmo({ colorMode: 'light', liveLink: liveLink() })(t);
 
     expect(html(t)).toContain(`data-dgmo-ref="${ID}"`);
     expect(html(t)).toContain('data-dgmo-ref-updated="4242"');
@@ -86,40 +86,69 @@ describe('a cloud reference renders as an ordinary block', () => {
 
   it('accepts all three spellings — parity is the resolver’s job, not ours', async () => {
     for (const body of [
-      `cloud ${ID}`,
-      `![[cloud:${ID}]]`,
+      `live-link ${ID}`,
+      `![[live-link:${ID}]]`,
       `https://api.diagrammo.app/public/diagrams/${ID}/source`,
     ]) {
       const t = tree(body);
-      await remarkDgmo({ colorMode: 'light', references: references() })(t);
+      await remarkDgmo({ colorMode: 'light', liveLink: liveLink() })(t);
       expect(html(t)).toContain(`data-dgmo-ref="${ID}"`);
     }
   });
 });
 
-describe('off by default — the guarantee the other four wrappers rely on', () => {
-  it('does not fetch, and renders exactly what it renders today', async () => {
+describe('ON by default, and OFF is a deliberate choice', () => {
+  it('AC17: a wrapper with no config at all resolves and bakes the diagram', async () => {
+    // The old default was OFF, so non-piloting wrappers changed behaviour by
+    // zero bytes. That promise is retired: a pointer that does not resolve is
+    // not a feature someone opted into, it is a broken page.
     const fetchImpl = okFetch();
-    const withFeatureOff = tree(`cloud ${ID}`);
-    await remarkDgmo({ colorMode: 'light' })(withFeatureOff);
-
-    const explicitlyDisabled = tree(`cloud ${ID}`);
+    const t = tree(`live-link ${ID}`);
     await remarkDgmo({
       colorMode: 'light',
-      references: { enabled: false, fetchImpl, fs: memFs() },
-    })(explicitlyDisabled);
+      liveLink: { fetchImpl, fs: memFs() },
+    })(t);
 
-    expect(fetchImpl).not.toHaveBeenCalled();
-    expect(html(withFeatureOff)).toBe(html(explicitlyDisabled));
-    expect(html(withFeatureOff)).not.toContain('data-dgmo-ref');
+    expect(fetchImpl).toHaveBeenCalled();
+    expect(html(t)).toContain(`data-dgmo-ref="${ID}"`);
   });
 
-  it('a pasted diagram is untouched when references are ON', async () => {
+  it('AC18: off renders the reference card with a click-through, and warns', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const fetchImpl = okFetch();
+    const t = tree(`live-link ${ID}`);
+
+    await remarkDgmo({
+      colorMode: 'light',
+      liveLink: { enabled: false, fetchImpl, fs: memFs() },
+    })(t, { path: 'docs/architecture.md' });
+
+    // Never fetched…
+    expect(fetchImpl).not.toHaveBeenCalled();
+    expect(html(t)).not.toContain('data-dgmo-ref');
+    // …but not an error block either. Since `live-link` became a real chart
+    // type, calling a valid fence broken takes deliberate work.
+    expect(html(t)).toContain('<svg');
+    expect(html(t)).toContain('Live link published at Diagrammo Cloud');
+    // AC22 — the affordance, and where it points.
+    expect(html(t)).toContain('dgmo-live-link-enable');
+    expect(html(t)).toContain('Show this diagram here');
+    expect(html(t)).toContain('https://diagrammo.app/docs/live-links/');
+
+    // The warning names the option and the source file, not just an id.
+    const message = warn.mock.calls.map((c) => String(c[0])).join('\n');
+    expect(message).toContain('liveLink');
+    expect(message).toContain('docs/architecture.md');
+    expect(message).toContain(ID);
+    warn.mockRestore();
+  });
+
+  it('a pasted diagram is untouched when live links are ON', async () => {
     const fetchImpl = okFetch();
     const t = tree(SOURCE);
     await remarkDgmo({
       colorMode: 'light',
-      references: references({ fetchImpl }),
+      liveLink: liveLink({ fetchImpl }),
     })(t);
 
     expect(fetchImpl).not.toHaveBeenCalled();
@@ -138,11 +167,11 @@ describe('when the reference cannot be resolved', () => {
       fetchedAt: 1,
     });
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const t = tree(`cloud ${ID}`);
+    const t = tree(`live-link ${ID}`);
 
     await remarkDgmo({
       colorMode: 'light',
-      references: references({
+      liveLink: liveLink({
         fetchImpl: vi.fn(() =>
           Promise.resolve(new Response('{}', { status: 410 }))
         ) as unknown as typeof fetch,
@@ -167,7 +196,7 @@ describe('when the reference cannot be resolved', () => {
           type: 'code',
           lang: 'dgmo',
           meta: null,
-          value: `cloud ${ID}`,
+          value: `live-link ${ID}`,
           position: {
             start: { line: 12, column: 1, offset: 0 },
             end: { line: 14, column: 1, offset: 0 },
@@ -179,7 +208,7 @@ describe('when the reference cannot be resolved', () => {
     await expect(
       remarkDgmo({
         colorMode: 'light',
-        references: references({
+        liveLink: liveLink({
           fetchImpl: vi.fn(() =>
             Promise.resolve(new Response('{}', { status: 404 }))
           ) as unknown as typeof fetch,
@@ -190,11 +219,11 @@ describe('when the reference cannot be resolved', () => {
 
   it('an unreachable Cloud does NOT fail the build when the cache can answer', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
-    const t = tree(`cloud ${ID}`);
+    const t = tree(`live-link ${ID}`);
 
     await remarkDgmo({
       colorMode: 'light',
-      references: references({
+      liveLink: liveLink({
         fetchImpl: vi.fn(() =>
           Promise.reject(new Error('ENOTFOUND'))
         ) as unknown as typeof fetch,

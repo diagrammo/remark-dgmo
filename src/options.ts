@@ -125,18 +125,27 @@ export interface DgmoOptions {
   mdx?: boolean;
 
   /**
-   * Resolve cloud references — a ```dgmo fence whose body is `cloud abc123`,
+   * Resolve live links — a ```dgmo fence whose body is `live-link abc123`,
    * naming a diagram in Diagrammo Cloud instead of carrying its own source.
    *
-   * **Off by default**, and that default is load-bearing: this module is shared
-   * by every host wrapper, and references are piloting on exactly one of them.
-   * With it off, a cloud fence renders as it always has (an error block) and no
-   * wrapper's output changes by a byte.
+   * **On by default since the rename.** The old `references` option defaulted
+   * to OFF so that non-piloting wrappers changed behaviour by zero bytes. That
+   * promise costs more than it protects: a pointer that does not resolve is not
+   * a feature someone opted into, it is a broken page. Pre-1.0 the default
+   * flips, and turning it off becomes something a site owner chooses.
+   *
+   * Named for the word people type in the fence. It also resolves a collision:
+   * in Cloud a *reference* already means a third-party site embedding a
+   * published diagram, and the two senses sat a paragraph apart in this repo.
+   *
+   * With it OFF, a `live-link` fence renders the reference card — the same card
+   * the CLI and the desktop app draw — wrapped in a hover-revealed link to the
+   * live diagram, and the build warns naming this option and the source line.
    *
    * See `reference-resolve.ts` for what happens when the fetch goes wrong — that
    * table is the part of this feature worth reading.
    */
-  references?: ReferenceOptions;
+  liveLink?: ReferenceOptions;
 }
 
 export type ResolvedOptions = Required<
@@ -147,7 +156,7 @@ export type ResolvedOptions = Required<
     | 'showExpand'
     | 'showOpenInEditor'
     | 'mdx'
-    | 'references'
+    | 'liveLink'
   >
 > & {
   showSource: boolean;
@@ -155,7 +164,7 @@ export type ResolvedOptions = Required<
   showExpand: boolean;
   showOpenInEditor: boolean;
   mdx: boolean;
-  references: ResolvedReferenceOptions;
+  liveLink: ResolvedReferenceOptions;
 };
 
 /**
@@ -180,6 +189,6 @@ export function resolveOptions(opts: DgmoOptions = {}): ResolvedOptions {
     className: opts.className ?? 'dgmo',
     legacyClassNames: opts.legacyClassNames ?? [],
     mdx: opts.mdx ?? false,
-    references: resolveReferenceOptions(opts.references),
+    liveLink: resolveReferenceOptions(opts.liveLink),
   };
 }

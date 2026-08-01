@@ -1,7 +1,7 @@
 /**
- * Cloud references — build-time resolution (Diagrammo Cloud story 10.4).
+ * Live links — build-time resolution (Diagrammo Cloud story 10.4).
  *
- * A ```dgmo fence whose body is `cloud abc123` names a diagram living in
+ * A ```dgmo fence whose body is `live-link abc123` names a diagram living in
  * Diagrammo Cloud instead of carrying its own source. This module turns that
  * name into source at build time, writes what it got into a cache the site
  * COMMITS, and decides — for every way the fetch can go wrong — whether the
@@ -77,9 +77,13 @@ export interface ReferenceCacheFs {
 
 export interface ReferenceOptions {
   /**
-   * Resolve `cloud <id>` fences. **Default `false`.** Off means a cloud fence
-   * renders exactly as it does today — as an error block — so the wrappers that
-   * are not piloting this change behaviour by zero bytes.
+   * Resolve `live-link <id>` fences. **Default `true`.**
+   *
+   * It defaulted to `false` while the feature was piloting on one wrapper, so
+   * the others changed behaviour by zero bytes. That promise is retired: a
+   * pointer that does not resolve is not a feature someone opted into, it is a
+   * broken page. Off is now a deliberate choice, and on that path the fence
+   * renders a reference card with a click-through and the build warns.
    */
   enabled?: boolean;
   /**
@@ -165,7 +169,7 @@ export function resolveReferenceOptions(
   opts: ReferenceOptions = {}
 ): ResolvedReferenceOptions {
   return {
-    enabled: opts.enabled ?? false,
+    enabled: opts.enabled ?? true,
     refresh: opts.refresh ?? 'notify',
     base: opts.base,
     cacheDir: opts.cacheDir ?? DEFAULT_CACHE_DIR,
@@ -225,7 +229,7 @@ export function noticeCspPrerequisite(base: string | undefined): void {
   noticed = true;
   const origin = base ?? 'https://api.diagrammo.app';
   console.info(
-    `[remark-dgmo] Cloud references resolved. For diagrams to refresh in the browser, your Content-Security-Policy must allow \`connect-src ${origin}\` — without it the baked diagram still renders, but it will never update, and nothing can report that.`
+    `[remark-dgmo] Live links resolved. For diagrams to refresh in the browser, your Content-Security-Policy must allow \`connect-src ${origin}\` — without it the baked diagram still renders, but it will never update, and nothing can report that.`
   );
 }
 
@@ -356,7 +360,7 @@ export async function resolveReference(
   if (opts.offline) {
     if (cached) return fromCache(cached);
     throw new ReferenceBuildError(
-      `Cloud reference ${ref.id} has no cached copy and references are set to offline. Run a build with network access once so \`${path}\` exists, and commit it.`,
+      `Live link ${ref.id} has no cached copy and live links are set to offline (\`liveLink: { offline: true }\`). Run a build with network access once so \`${path}\` exists, and commit it.`,
       ref.id,
       location
     );
@@ -379,7 +383,7 @@ export async function resolveReference(
     // Deliberately NOT falling back to the cache. See the module comment.
     return {
       kind: 'tombstone',
-      warning: `Cloud reference ${ref.id} has been unshared by its author — showing a placeholder instead of the diagram. Remove the reference, or ask them to publish it again.`,
+      warning: `Live link ${ref.id} has been unshared by its author — showing a placeholder instead of the diagram. Remove the live link, or ask them to publish it again.`,
     };
   }
 
@@ -387,11 +391,11 @@ export async function resolveReference(
     if (cached) {
       return {
         ...fromCache(cached),
-        warning: `Cloud reference ${ref.id} no longer resolves (404) — rendering the last copy from ${path}. It may have been deleted.`,
+        warning: `Live link ${ref.id} no longer resolves (404) — rendering the last copy from ${path}. It may have been deleted.`,
       };
     }
     throw new ReferenceBuildError(
-      `Cloud reference ${ref.id} does not exist, or is not published. Check the id.`,
+      `Live link ${ref.id} does not exist, or is not published. Check the id.`,
       ref.id,
       location
     );
@@ -400,11 +404,11 @@ export async function resolveReference(
   if (cached) {
     return {
       ...fromCache(cached),
-      warning: `Cloud reference ${ref.id} could not be fetched (${result.reason}) — rendering the cached copy from ${path}.`,
+      warning: `Live link ${ref.id} could not be fetched (${result.reason}) — rendering the cached copy from ${path}.`,
     };
   }
   throw new ReferenceBuildError(
-    `Cloud reference ${ref.id} could not be fetched (${result.reason}) and has no cached copy at ${path}.`,
+    `Live link ${ref.id} could not be fetched (${result.reason}) and has no cached copy at ${path}.`,
     ref.id,
     location
   );

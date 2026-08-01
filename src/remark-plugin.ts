@@ -13,6 +13,7 @@ import {
   type ReferenceOutcome,
 } from './reference-resolve.js';
 import { tombstoneCardHtml } from './tombstone-card.js';
+import { liveLinkOffWarning, wrapLiveLinkOff } from './live-link-off.js';
 import { htmlToMdxJsxNode } from './mdx-node.js';
 
 export type RemarkDgmoOptions = DgmoOptions;
@@ -23,6 +24,11 @@ interface FencePayload {
   location: BlockLocation;
   /** Set when the fence body named a cloud diagram instead of carrying source. */
   reference?: CloudReference;
+  /**
+   * Set when the fence names a diagram but live links are switched OFF. The
+   * card still renders (see live-link-off.ts) — it is just never fetched.
+   */
+  unresolvedLiveLink?: CloudReference;
 }
 
 interface Target {
@@ -52,7 +58,7 @@ export default function remarkDgmo(options: RemarkDgmoOptions = {}) {
     tree: Root,
     file?: { path?: string }
   ): Promise<void> {
-    const references = resolveOptions(options).references;
+    const liveLink = resolveOptions(options).liveLink;
 
     const targets: Target[] = [];
     visit(tree, 'code', (node: Code, index, parent) => {
@@ -67,13 +73,15 @@ export default function remarkDgmo(options: RemarkDgmoOptions = {}) {
         meta: node.meta ?? null,
         location: loc,
       };
-      // A cloud reference is recognised only when the feature is ON. Off, the
-      // body falls through to the renderer exactly as it does today — which
-      // produces an error card, and that is the correct answer for a site that
-      // has not enabled references.
-      if (references.enabled) {
-        const ref = parseCloudReference(node.value);
-        if (ref) payload.reference = ref;
+      // A live link is recognised either way — what changes is whether it gets
+      // FETCHED. Off, the fence still renders its reference card (with a
+      // click-through) rather than falling through to an error block: since
+      // `live-link` became a real chart type, calling a valid fence broken
+      // would take deliberate work and would be the wrong answer anyway.
+      const ref = parseCloudReference(node.value);
+      if (ref) {
+        if (liveLink.enabled) payload.reference = ref;
+        else payload.unresolvedLiveLink = ref;
       }
       targets.push({ parent: parent as Parent, index, payload });
     });
@@ -89,7 +97,7 @@ export default function remarkDgmo(options: RemarkDgmoOptions = {}) {
           ref: t.payload.reference as CloudReference,
           location: t.payload.location,
         })),
-      references
+      liveLink
     );
 
     // A reference that could not be resolved AT ALL fails the build, and it
@@ -129,7 +137,7 @@ export default function remarkDgmo(options: RemarkDgmoOptions = {}) {
 }
 
 /**
- * Render one fence — a pasted diagram, or a resolved cloud reference.
+ * Render one fence — a pasted diagram, or a resolved live link.
  *
  * A reference goes through the SAME `renderDgmoBlock` call as pasted source, so
  * the two are indistinguishable in the output. That is the whole design: every
@@ -141,7 +149,23 @@ async function renderTarget(
   resolved: Map<string, ReferenceOutcome | ReferenceBuildError>,
   options: RemarkDgmoOptions
 ): Promise<{ html: string; diagnostics: unknown[] }> {
-  const { reference, source, meta, location } = target.payload;
+  const { reference, unresolvedLiveLink, source, meta, location } =
+    target.payload;
+
+  // Live links switched off: render the card the ordinary way — `live-link` is
+  // a registered chart type, so the render path already produces one — then
+  // wrap it with the hover affordance and say so in the build log.
+  if (unresolvedLiveLink) {
+    warn(liveLinkOffWarning(unresolvedLiveLink), location);
+    const result = await renderDgmoBlock(source, meta, options, location);
+    return {
+      ...result,
+      html: wrapLiveLinkOff(result.html, {
+        className: resolveOptions(options).className,
+      }),
+    };
+  }
+
   if (!reference) {
     return renderDgmoBlock(source, meta, options, location);
   }
@@ -150,7 +174,7 @@ async function renderTarget(
   // Unresolvable references already threw above; anything missing here is a
   // bug in the batch, not a user error.
   if (!outcome || outcome instanceof ReferenceBuildError) {
-    throw outcome ?? new Error(`Unresolved cloud reference ${reference.id}`);
+    throw outcome ?? new Error(`Unresolved live link ${reference.id}`);
   }
 
   if (outcome.kind === 'tombstone') {
