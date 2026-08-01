@@ -139,8 +139,9 @@ export interface DgmoOptions {
    * published diagram, and the two senses sat a paragraph apart in this repo.
    *
    * With it OFF, a `live-link` fence renders the reference card — the same card
-   * the CLI and the desktop app draw — wrapped in a hover-revealed link to the
-   * live diagram, and the build warns naming this option and the source line.
+   * the CLI and the desktop app draw — linking through to the diagram at
+   * `/d/<id>`, plus a hover-revealed "Show this diagram here" link to the guide,
+   * and the build warns naming this option and the source line.
    *
    * See `reference-resolve.ts` for what happens when the fetch goes wrong — that
    * table is the part of this feature worth reading.

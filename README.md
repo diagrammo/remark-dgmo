@@ -262,9 +262,10 @@ plain share URL.
 remarkDgmo({ liveLink: { enabled: false } });
 ```
 
-Switched off, a live-link fence renders a small card naming the diagram, with a
-hover link through to it, and the build warns naming the file and line. Nothing
-is fetched. See the [live links guide](https://diagrammo.app/docs/live-links/).
+Switched off, a live-link fence renders a small card naming the diagram and
+linking through to it, plus a hover-revealed *"Show this diagram here"* link to
+the guide, and the build warns naming the file and line. Nothing is fetched. See
+the [live links guide](https://diagrammo.app/docs/live-links/).
 
 **Only published diagrams can be referenced.** A private diagram is not
 fetchable at all — there are no tokens, no signed links, and no origin

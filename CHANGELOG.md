@@ -47,8 +47,9 @@ remarkDgmo({ liveLink: { enabled: false } });
 ```
 
 On that path a live-link fence renders the **reference card** — the same card the
-CLI and the desktop app draw — with a hover-revealed link to the live diagram,
-and the build logs a warning naming the option and the source line. It is no
+CLI and the desktop app draw — linking through to the diagram at `/d/<id>`, plus
+a hover-revealed *"Show this diagram here"* link to the guide, and the build logs
+a warning naming the option and the source line. It is no
 longer an error block; since `live-link` became a real chart type, calling a
 valid fence broken would take deliberate work.
 

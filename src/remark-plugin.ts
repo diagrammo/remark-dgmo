@@ -154,15 +154,23 @@ async function renderTarget(
 
   // Live links switched off: render the card the ordinary way — `live-link` is
   // a registered chart type, so the render path already produces one — then
-  // wrap it with the hover affordance and say so in the build log.
+  // wrap it with the affordance and say so in the build log.
   if (unresolvedLiveLink) {
     warn(liveLinkOffWarning(unresolvedLiveLink), location);
-    const result = await renderDgmoBlock(source, meta, options, location);
+    // 🔴 Render the CANONICAL fence spelling, not `source`. Three spellings
+    // reach here — `live-link <id>`, `![[live-link:<id>]]` and a plain share URL
+    // — but only the first is a chart-type declaration dgmo can route. Passing
+    // the raw body through would hand two of the three an "Unsupported chart
+    // type" error card while the warning promised a reference card.
+    const result = await renderDgmoBlock(
+      `live-link ${unresolvedLiveLink.id}`,
+      meta,
+      options,
+      location
+    );
     return {
       ...result,
-      html: wrapLiveLinkOff(result.html, {
-        className: resolveOptions(options).className,
-      }),
+      html: wrapLiveLinkOff(result.html, unresolvedLiveLink),
     };
   }
 

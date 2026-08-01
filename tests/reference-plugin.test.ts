@@ -130,7 +130,10 @@ describe('ON by default, and OFF is a deliberate choice', () => {
     // type, calling a valid fence broken takes deliberate work.
     expect(html(t)).toContain('<svg');
     expect(html(t)).toContain('Live link published at Diagrammo Cloud');
-    // AC22 — the affordance, and where it points.
+    // AC18 — the card itself links through to the diagram.
+    expect(html(t)).toContain('dgmo-live-link-view');
+    expect(html(t)).toContain(`https://online.diagrammo.app/d/${ID}`);
+    // AC22 — the author-facing affordance, and where it points.
     expect(html(t)).toContain('dgmo-live-link-enable');
     expect(html(t)).toContain('Show this diagram here');
     expect(html(t)).toContain('https://diagrammo.app/docs/live-links/');
@@ -140,6 +143,30 @@ describe('ON by default, and OFF is a deliberate choice', () => {
     expect(message).toContain('liveLink');
     expect(message).toContain('docs/architecture.md');
     expect(message).toContain(ID);
+    warn.mockRestore();
+  });
+
+  it('off: EVERY spelling renders the card, not just the fence one', async () => {
+    // The card is produced by rendering a canonical `live-link <id>`, never the
+    // raw fence body — `![[live-link:id]]` and a plain share URL are not
+    // chart-type declarations, so passing the body through would hand two of
+    // the three an "Unsupported chart type" card while the warning promised a
+    // reference card.
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    for (const body of [
+      `live-link ${ID}`,
+      `![[live-link:${ID}]]`,
+      `https://online.diagrammo.app/d/${ID}`,
+    ]) {
+      const t = tree(body);
+      await remarkDgmo({
+        colorMode: 'light',
+        liveLink: { enabled: false, fetchImpl: okFetch(), fs: memFs() },
+      })(t);
+      expect(html(t), body).toContain('Live link published at Diagrammo Cloud');
+      expect(html(t), body).not.toContain('Unsupported chart type');
+      expect(html(t), body).toContain('dgmo-live-link-off');
+    }
     warn.mockRestore();
   });
 
