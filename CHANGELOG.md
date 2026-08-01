@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.12.0
 
 **🔴 Two breaking changes, plus a default flip.** All three land together and all
 three are visible to a site that upgrades and changes nothing.
