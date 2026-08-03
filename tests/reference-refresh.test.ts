@@ -315,3 +315,49 @@ describe('the renderer is opt-in, and the default bundle cannot reach it', () =>
     expect(code).not.toMatch(/import\(\s*['"]@diagrammo\/dgmo/);
   });
 });
+
+describe('the default scheduler', () => {
+  // Every other test in this file injects `schedule`, so the real one was never
+  // run — which is how it shipped asking `requestIdleCallback` for a callback
+  // with no deadline. On a page heavy enough to matter (the showcases carry
+  // dozens of diagrams) the browser can defer that indefinitely, and the page
+  // does nothing at all: no swap, and no notice either, because the callback
+  // that produces both never fires.
+  it('gives requestIdleCallback a deadline', async () => {
+    block({
+      'data-dgmo-ref': ID,
+      'data-dgmo-ref-updated': '100',
+      'data-dgmo-ref-version': '0.56.0',
+    });
+    const idle = vi.fn((cb: () => void, _opts?: { timeout: number }) => {
+      cb();
+      return 1;
+    });
+    vi.stubGlobal('requestIdleCallback', idle);
+
+    await refreshCloudReferences({ fetchImpl: source() });
+
+    expect(idle).toHaveBeenCalledTimes(1);
+    expect(idle.mock.calls[0][1]).toEqual({ timeout: expect.any(Number) });
+    vi.unstubAllGlobals();
+  });
+
+  it('still runs on a browser that has no requestIdleCallback', async () => {
+    block({
+      'data-dgmo-ref': ID,
+      'data-dgmo-ref-updated': '100',
+      'data-dgmo-ref-version': '0.56.0',
+    });
+    vi.stubGlobal('requestIdleCallback', undefined);
+    vi.useFakeTimers();
+
+    const fetchImpl = source();
+    const pass = refreshCloudReferences({ fetchImpl });
+    await vi.advanceTimersByTimeAsync(1500);
+    await pass;
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+});

@@ -113,12 +113,38 @@ interface SourceResponse {
   updatedAt?: unknown;
 }
 
+/**
+ * How long the idle path may wait before running anyway. Matches the
+ * `setTimeout` fallback below, so the check is bounded on every browser rather
+ * than only on the ones lacking `requestIdleCallback`.
+ */
+const SCHEDULE_TIMEOUT_MS = 1000;
+
+/**
+ * 🔴 The `timeout` is load-bearing, not a nicety. `requestIdleCallback(cb)` with
+ * no deadline is a request the browser may defer for as long as it likes — and a
+ * page carrying dozens of diagrams, which is exactly the kind of page that has a
+ * live link on it, can keep a browser busy long enough that "idle" never
+ * arrives. It read as the feature being broken: the diagram had changed, the API
+ * said so, and the page did nothing at all — no swap and no notice, because the
+ * callback that would have produced either had not run.
+ *
+ * The asymmetry was the tell. A browser WITHOUT `requestIdleCallback` fell
+ * through to `setTimeout(run, 1000)` and always worked; a browser with it got no
+ * guarantee whatsoever. Found on Safari 2026-08-03, against the astro-dgmo
+ * showcase (~64 dual-rendered charts, 550 KB of gzipped HTML).
+ */
 function defaultSchedule(run: () => void): void {
   const idle = (
-    globalThis as { requestIdleCallback?: (cb: () => void) => number }
+    globalThis as {
+      requestIdleCallback?: (
+        cb: () => void,
+        opts?: { timeout: number }
+      ) => number;
+    }
   ).requestIdleCallback;
-  if (typeof idle === 'function') idle(run);
-  else setTimeout(run, 1000);
+  if (typeof idle === 'function') idle(run, { timeout: SCHEDULE_TIMEOUT_MS });
+  else setTimeout(run, SCHEDULE_TIMEOUT_MS);
 }
 
 /**

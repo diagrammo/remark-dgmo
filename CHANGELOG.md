@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.13.1
+
+**A live link on a busy page could go unchecked forever.**
+
+The client asks once, after load, whether a referenced diagram has changed. It
+scheduled that question with `requestIdleCallback(cb)` and **no deadline** — a
+request the browser is free to defer for as long as it likes. A page carrying
+dozens of diagrams, which is exactly the kind of page that has a live link on it,
+can keep a browser busy long enough that "idle" never arrives.
+
+The symptom is the feature appearing dead rather than broken: the diagram had
+changed, the API said so, and the page did nothing — no re-render, and no
+*"This diagram has been updated"* notice either, because the callback that
+produces both had not run.
+
+The asymmetry was the tell. A browser **without** `requestIdleCallback` fell
+through to `setTimeout(run, 1000)` and always worked; a browser **with** it got no
+guarantee at all. Now both paths are bounded at the same 1 s.
+
+Found on Safari against the `astro-dgmo` showcase — ~64 dual-rendered charts,
+550 KB of gzipped HTML. Every existing test injected its own scheduler, so the
+real one had never run in CI; two tests now cover it, and the first fails against
+0.13.0.
+
 ## 0.13.0
 
 **A live link now works on a host that has no remark plugin.**
