@@ -1,40 +1,27 @@
 import { visit } from 'unist-util-visit';
 import type { Root, Code, Html, Parent } from 'mdast';
 import { errorBlockHtml } from '@diagrammo/dgmo/block';
-import {
-  parseCloudReference,
-  type CloudReference,
-} from '@diagrammo/dgmo/cloud-reference';
-import { renderDgmoBlock, type BlockLocation } from './render-block.js';
+import type { CloudReference } from '@diagrammo/dgmo/cloud-reference';
+import type { BlockLocation } from './render-block.js';
 import { resolveOptions, type DgmoOptions } from './options.js';
 import {
   ReferenceBuildError,
   resolveReferences,
-  type ReferenceOutcome,
 } from './reference-resolve.js';
-import { tombstoneCardHtml } from './tombstone-card.js';
-import { liveLinkOffWarning, wrapLiveLinkOff } from './live-link-off.js';
+import {
+  classifyFence,
+  locatedError,
+  renderClassifiedFence,
+  type ClassifiedFence,
+} from './render-fence.js';
 import { htmlToMdxJsxNode } from './mdx-node.js';
 
 export type RemarkDgmoOptions = DgmoOptions;
 
-interface FencePayload {
-  source: string;
-  meta: string | null;
-  location: BlockLocation;
-  /** Set when the fence body named a cloud diagram instead of carrying source. */
-  reference?: CloudReference;
-  /**
-   * Set when the fence names a diagram but live links are switched OFF. The
-   * card still renders (see live-link-off.ts) — it is just never fetched.
-   */
-  unresolvedLiveLink?: CloudReference;
-}
-
 interface Target {
   parent: Parent;
   index: number;
-  payload: FencePayload;
+  payload: ClassifiedFence;
 }
 
 /**
@@ -68,21 +55,7 @@ export default function remarkDgmo(options: RemarkDgmoOptions = {}) {
       if (file?.path) loc.path = file.path;
       const line = node.position?.start.line;
       if (typeof line === 'number') loc.line = line;
-      const payload: FencePayload = {
-        source: node.value,
-        meta: node.meta ?? null,
-        location: loc,
-      };
-      // A live link is recognised either way — what changes is whether it gets
-      // FETCHED. Off, the fence still renders its reference card (with a
-      // click-through) rather than falling through to an error block: since
-      // `live-link` became a real chart type, calling a valid fence broken
-      // would take deliberate work and would be the wrong answer anyway.
-      const ref = parseCloudReference(node.value);
-      if (ref) {
-        if (liveLink.enabled) payload.reference = ref;
-        else payload.unresolvedLiveLink = ref;
-      }
+      const payload = classifyFence(node.value, node.meta ?? null, loc, options);
       targets.push({ parent: parent as Parent, index, payload });
     });
     if (targets.length === 0) return;
@@ -108,13 +81,19 @@ export default function remarkDgmo(options: RemarkDgmoOptions = {}) {
       if (outcome instanceof ReferenceBuildError) throw locatedError(outcome);
     }
 
+    // The render half is shared with the hosts that have no batch phase —
+    // see render-fence.ts. Everything above this line is what batching buys.
     const rendered = await Promise.all(
-      targets.map((t) =>
-        renderTarget(t, resolved, options).catch((err) => ({
-          html: errorBlockHtml(err, t.payload.source, options),
-          diagnostics: [],
-        }))
-      )
+      targets.map((t) => {
+        const id = t.payload.reference?.id;
+        const outcome = id === undefined ? undefined : resolved.get(id);
+        return renderClassifiedFence(t.payload, outcome, options).catch(
+          (err) => ({
+            html: errorBlockHtml(err, t.payload.source, options),
+            diagnostics: [],
+          })
+        );
+      })
     );
 
     // Replace in reverse index order per parent so earlier replacements don't
@@ -134,104 +113,4 @@ export default function remarkDgmo(options: RemarkDgmoOptions = {}) {
       t.parent.children[t.index] = replacement as unknown as Html;
     }
   };
-}
-
-/**
- * Render one fence — a pasted diagram, or a resolved live link.
- *
- * A reference goes through the SAME `renderDgmoBlock` call as pasted source, so
- * the two are indistinguishable in the output. That is the whole design: every
- * showcase feature, every palette, every fence-meta token keeps working on a
- * reference without being reimplemented for it.
- */
-async function renderTarget(
-  target: Target,
-  resolved: Map<string, ReferenceOutcome | ReferenceBuildError>,
-  options: RemarkDgmoOptions
-): Promise<{ html: string; diagnostics: unknown[] }> {
-  const { reference, unresolvedLiveLink, source, meta, location } =
-    target.payload;
-
-  // Live links switched off: render the card the ordinary way — `live-link` is
-  // a registered chart type, so the render path already produces one — then
-  // wrap it with the affordance and say so in the build log.
-  if (unresolvedLiveLink) {
-    warn(liveLinkOffWarning(unresolvedLiveLink), location);
-    // 🔴 Render the CANONICAL fence spelling, not `source`. Three spellings
-    // reach here — `live-link <id>`, `![[live-link:<id>]]` and a plain share URL
-    // — but only the first is a chart-type declaration dgmo can route. Passing
-    // the raw body through would hand two of the three an "Unsupported chart
-    // type" error card while the warning promised a reference card.
-    const result = await renderDgmoBlock(
-      `live-link ${unresolvedLiveLink.id}`,
-      meta,
-      options,
-      location
-    );
-    return {
-      ...result,
-      html: wrapLiveLinkOff(result.html, unresolvedLiveLink),
-    };
-  }
-
-  if (!reference) {
-    return renderDgmoBlock(source, meta, options, location);
-  }
-
-  const outcome = resolved.get(reference.id);
-  // Unresolvable references already threw above; anything missing here is a
-  // bug in the batch, not a user error.
-  if (!outcome || outcome instanceof ReferenceBuildError) {
-    throw outcome ?? new Error(`Unresolved live link ${reference.id}`);
-  }
-
-  if (outcome.kind === 'tombstone') {
-    warn(outcome.warning, location);
-    const resolvedOpts = resolveOptions(options);
-    return {
-      html: tombstoneCardHtml({
-        className: resolvedOpts.className,
-        wrapper: resolvedOpts.wrapper,
-        legacyClassNames: resolvedOpts.legacyClassNames,
-      }),
-      diagnostics: [],
-    };
-  }
-
-  if (outcome.warning) warn(outcome.warning, location);
-
-  // The markers the client refresh reads back (story 10.4 P11): the id, the
-  // revision this page was baked from, and the renderer version that baked it.
-  // Nothing else — no source, no space, no author.
-  return renderDgmoBlock(outcome.source, meta, options, location, {
-    dataAttributes: {
-      'dgmo-ref': reference.id,
-      'dgmo-ref-updated': String(outcome.updatedAt),
-      'dgmo-ref-version': outcome.dgmoVersion,
-    },
-  });
-}
-
-function warn(message: string, location: BlockLocation): void {
-  console.warn(`[remark-dgmo] ${message}${locationSuffix(location)}`);
-}
-
-/** Put the file and line INTO the message — a build error naming only an id sends someone grepping. */
-function locatedError(err: ReferenceBuildError): ReferenceBuildError {
-  const suffix = locationSuffix(err.location);
-  if (!suffix) return err;
-  return new ReferenceBuildError(
-    `${err.message}${suffix}`,
-    err.id,
-    err.location
-  );
-}
-
-function locationSuffix(location: BlockLocation | undefined): string {
-  if (!location) return '';
-  if (location.path && location.line)
-    return ` (${location.path}:${String(location.line)})`;
-  if (location.path) return ` (${location.path})`;
-  if (location.line) return ` (line ${String(location.line)})`;
-  return '';
 }

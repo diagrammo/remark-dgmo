@@ -37,7 +37,7 @@ Referenced diagrams need `connect-src https://api.diagrammo.app` in a host's CSP
 
 This publishes **before** the host wrappers and must be live on npm first — their CI installs the new version at build time, so a wrapper tagged in the same breath builds against the old one.
 
-⚠️ **A caret on a `0.x` version locks the minor**, so every wrapper needs an explicit dependency bump on each minor here — `^0.10.0` will not take 0.11.0. Landing a minor here is not done until those bumps are done. All five wrappers are caught up as of 2026-07-31 (`remark-dgmo ^0.11.0`, peer `@diagrammo/dgmo >=0.57.0 <1`) — check with the `jq` sweep rather than trusting this sentence:
+⚠️ **A caret on a `0.x` version locks the minor**, so every wrapper needs an explicit dependency bump on each minor here — `^0.10.0` will not take 0.11.0. Landing a minor here is not done until those bumps are done. All five wrappers were caught up as of 2026-08-03 (`remark-dgmo ^0.12.0`, peer `@diagrammo/dgmo >=0.58.0 <1`); 0.13.0 needs the same sweep again — check with the `jq` sweep rather than trusting this sentence:
 
 ```bash
 for d in astro-dgmo docusaurus-plugin-dgmo fumadocs-dgmo nextra-dgmo vitepress-dgmo; do

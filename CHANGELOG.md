@@ -1,5 +1,40 @@
 # Changelog
 
+## 0.13.0
+
+**A live link now works on a host that has no remark plugin.**
+
+Everything that turns a fence body into a diagram — recognising a share URL,
+fetching the published source, the withdrawn-diagram card, the markers the
+client refresh reads back — lived inside the remark transformer. `vitepress-dgmo`
+is a markdown-it host: it never runs that transformer, it calls `renderDgmoBlock`
+per fence from its own async pre-pass. So on VitePress a share URL was handed to
+the DGMO parser as if the URL were diagram source and came back **"Unsupported
+chart type"**, while the `live-link <id>` spelling drew a static reference card
+that never fetched anything. Neither failed a build; both simply looked wrong on
+the page.
+
+Three new exports, and one existing one that is now the wrong default:
+
+```js
+import { renderDgmoFence } from 'remark-dgmo';
+
+// Classifies the body, fetches if it names a published diagram, renders.
+const { html } = await renderDgmoFence(source, meta, options, location);
+```
+
+- **`renderDgmoFence(source, meta, options?, location?)`** — the one-shot path.
+  Call this, not `renderDgmoBlock`, whenever the fence body might be a live link.
+- **`classifyFence` + `renderClassifiedFence`** — the same work split in two, for
+  a host that has a document-wide phase to batch the fetches in. The remark
+  plugin now uses exactly these; its `renderTarget` was the original of this code
+  and is gone, so there is one implementation rather than two that drift.
+- `renderDgmoBlock` is unchanged and still renders a body as diagram **source**.
+  It remains correct for a host that has already resolved the reference itself.
+
+Nothing changes for the four remark-based wrappers: same plugin, same output,
+117 existing tests unmoved.
+
 ## 0.12.0
 
 **🔴 Two breaking changes, plus a default flip.** All three land together and all

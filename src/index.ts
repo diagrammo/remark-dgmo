@@ -12,6 +12,18 @@ export type { RemarkDgmoOptions } from './remark-plugin.js';
 export { renderDgmoBlock } from './render-block.js';
 export type { RenderBlockResult, BlockLocation } from './render-block.js';
 
+// `renderDgmoBlock` renders a fence body as diagram SOURCE. `renderDgmoFence`
+// is the one to call when the body might instead be a live link — it classifies,
+// fetches and renders. Hosts with a document-wide batch phase (the remark plugin)
+// use `classifyFence` + `renderClassifiedFence` to fetch each distinct id once;
+// hosts without one (`vitepress-dgmo`) call `renderDgmoFence` per fence.
+export {
+  classifyFence,
+  renderClassifiedFence,
+  renderDgmoFence,
+} from './render-fence.js';
+export type { ClassifiedFence } from './render-fence.js';
+
 export { parseFenceMeta } from './fence-meta.js';
 export type { BlockOptions } from './fence-meta.js';
 
