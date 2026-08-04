@@ -44,10 +44,26 @@
  * that diagram deliberately; our local copy must not outlive their revocation.
  * Stale-but-still-shared is fine. Stale-after-revoked is publishing something
  * somebody took back.
+ *
+ * ## What is NOT here any more
+ *
+ * The fetch itself — the request, the timeout, the retry, and the reading of
+ * 200/404/410/5xx into four outcomes — **moved into `@diagrammo/dgmo` on
+ * 2026-08-04**. It is the same six responses on every surface, and keeping the
+ * reading here meant the Obsidian plugin and the custom element could not have
+ * it: `vitepress-dgmo` shipped a release announcing live links it could not
+ * render for the same reason.
+ *
+ * What stayed is everything that is genuinely a BUILD's opinion — the committed
+ * cache, the table above, and what stops a build. A note being opened has no
+ * build to stop, which is exactly why the two had to come apart.
  */
 
 import type { CloudReference } from '@diagrammo/dgmo/cloud-reference';
-import { referenceSourceUrl } from '@diagrammo/dgmo/cloud-reference';
+import {
+  fetchLiveLink,
+  DEFAULT_LIVE_LINK_TIMEOUT_MS,
+} from '@diagrammo/dgmo/live-link-resolve';
 
 import type { BlockLocation } from './render-block.js';
 
@@ -134,7 +150,8 @@ export interface ResolvedReferenceOptions {
 
 export const DEFAULT_CACHE_DIR = '.dgmo/references';
 export const DEFAULT_CONCURRENCY = 6;
-export const DEFAULT_TIMEOUT_MS = 10_000;
+/** Re-exported rather than restated, so the two cannot drift apart. */
+export const DEFAULT_TIMEOUT_MS = DEFAULT_LIVE_LINK_TIMEOUT_MS;
 
 /**
  * The build stopped because of a reference. Carries the location so the message
@@ -176,11 +193,11 @@ export function resolveReferenceOptions(
     offline: opts.offline ?? false,
     concurrency: opts.concurrency ?? DEFAULT_CONCURRENCY,
     timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-    // Bound to the global for the same reason the client half is: `fetch` is a
-    // WebIDL operation whose `this` must be the global, and storing it on an
-    // options object makes every call a method call. Node's fetch happens to
-    // tolerate that today, which is exactly why the identical bug in the
-    // browser half went unnoticed for a whole feature's lifetime.
+    // Bound to the global: `fetch` is a WebIDL operation whose `this` must be
+    // the global, and storing it on an options bag makes every call a method
+    // call. `@diagrammo/dgmo/live-link-resolve` owns that rule now and binds its
+    // own default — this stays because `ResolvedReferenceOptions` is public and
+    // hands a callable out, so it must not hand out a broken one.
     fetchImpl:
       opts.fetchImpl ??
       (typeof globalThis.fetch === 'function'
@@ -293,66 +310,6 @@ function parseCache(raw: string | null): CachedReference | null {
   }
 }
 
-type FetchResult =
-  | { kind: 'ok'; entry: CachedReference }
-  | { kind: 'gone' } // 410 — withdrawn by its author
-  | { kind: 'missing' } // 404 — no such published diagram
-  | { kind: 'unavailable'; reason: string }; // network, timeout, 5xx, 429
-
-async function fetchOnce(
-  ref: CloudReference,
-  opts: ResolvedReferenceOptions
-): Promise<FetchResult> {
-  const url = referenceSourceUrl(
-    ref,
-    opts.base === undefined ? {} : { base: opts.base }
-  );
-  try {
-    // Off the object first, then called — never `opts.fetchImpl(...)`, which
-    // would pass `opts` as `this`. See the note where it is bound.
-    const { fetchImpl } = opts;
-    const res = await fetchImpl(url, {
-      signal: AbortSignal.timeout(opts.timeoutMs),
-      headers: { accept: 'application/json' },
-    });
-    if (res.status === 410) return { kind: 'gone' };
-    if (res.status === 404) return { kind: 'missing' };
-    if (!res.ok) {
-      return { kind: 'unavailable', reason: `HTTP ${String(res.status)}` };
-    }
-    const body = (await res.json()) as Partial<CachedReference>;
-    if (typeof body.source !== 'string') {
-      return { kind: 'unavailable', reason: 'malformed response' };
-    }
-    return {
-      kind: 'ok',
-      entry: {
-        id: ref.id,
-        source: body.source,
-        dgmoVersion:
-          typeof body.dgmoVersion === 'string' ? body.dgmoVersion : '',
-        updatedAt: typeof body.updatedAt === 'number' ? body.updatedAt : 0,
-        fetchedAt: opts.now(),
-      },
-    };
-  } catch (err) {
-    return {
-      kind: 'unavailable',
-      reason: err instanceof Error ? err.message : String(err),
-    };
-  }
-}
-
-/** One fetch, plus a single retry when the answer was "not right now" (429/5xx). */
-async function fetchWithRetry(
-  ref: CloudReference,
-  opts: ResolvedReferenceOptions
-): Promise<FetchResult> {
-  const first = await fetchOnce(ref, opts);
-  if (first.kind !== 'unavailable') return first;
-  return fetchOnce(ref, opts);
-}
-
 /**
  * Resolve one reference to something renderable, or throw.
  *
@@ -378,10 +335,19 @@ export async function resolveReference(
     );
   }
 
-  const result = await fetchWithRetry(ref, opts);
+  const result = await fetchLiveLink(ref, {
+    ...(opts.base === undefined ? {} : { base: opts.base }),
+    timeoutMs: opts.timeoutMs,
+    fetchImpl: opts.fetchImpl,
+  });
 
   if (result.kind === 'ok') {
-    await opts.fs.write(path, serializeCache(result.entry));
+    // `fetchedAt` is stamped HERE, not by the fetch: it is cache bookkeeping,
+    // and a surface with no cache has no use for it.
+    await opts.fs.write(
+      path,
+      serializeCache({ ...result.entry, fetchedAt: opts.now() })
+    );
     return {
       kind: 'source',
       source: result.entry.source,

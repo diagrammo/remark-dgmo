@@ -6,10 +6,11 @@ Framework-agnostic core that renders ` ```dgmo ` fences at build time. Published
 
 ## Depending on dgmo
 
-`@diagrammo/dgmo` is a **peerDependency** with a floor (`>=0.57.0 <1`) plus a matching `devDependency` (`^0.57.0`) so tests have something to resolve. The floor is set by the subpath imports, not by taste:
+`@diagrammo/dgmo` is a **peerDependency** with a floor plus a matching `devDependency` so tests have something to resolve — read both out of `package.json` rather than from a number written here. The floor is set by the subpath imports, not by taste:
 
 - `@diagrammo/dgmo/block` — `errorBlockHtml`, the embed renderer, `BLOCK_CSS` (`remark-plugin.ts`, `render-block.ts`, `client-render.ts`)
-- `@diagrammo/dgmo/cloud-reference` — `referenceSourceUrl`, the `CloudReference` parser (`reference-resolve.ts`)
+- `@diagrammo/dgmo/cloud-reference` — the `CloudReference` type (`reference-resolve.ts`)
+- `@diagrammo/dgmo/live-link-resolve` — `fetchLiveLink`, the request and the reading of 200/404/410/5xx (`reference-resolve.ts`). 🔴 **This package no longer owns that step.** It moved into dgmo on 2026-08-04 so the Obsidian plugin and the custom element could have it too; what stays here is the committed cache, the failure table, and what stops a build — a build's opinions, which a note being opened does not share. Re-implementing the response reading here would recreate exactly the split that shipped `vitepress-dgmo` announcing live links it could not render
 - `@diagrammo/dgmo/countdown`, `@diagrammo/dgmo/clock` — `startCountdowns` / `startClocks` in `client.ts`
 - root `normalizeSvgForEmbed`, re-exported as `normalizeSvg`
 
