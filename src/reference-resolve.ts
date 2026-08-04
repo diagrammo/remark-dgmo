@@ -176,7 +176,16 @@ export function resolveReferenceOptions(
     offline: opts.offline ?? false,
     concurrency: opts.concurrency ?? DEFAULT_CONCURRENCY,
     timeoutMs: opts.timeoutMs ?? DEFAULT_TIMEOUT_MS,
-    fetchImpl: opts.fetchImpl ?? globalThis.fetch,
+    // Bound to the global for the same reason the client half is: `fetch` is a
+    // WebIDL operation whose `this` must be the global, and storing it on an
+    // options object makes every call a method call. Node's fetch happens to
+    // tolerate that today, which is exactly why the identical bug in the
+    // browser half went unnoticed for a whole feature's lifetime.
+    fetchImpl:
+      opts.fetchImpl ??
+      (typeof globalThis.fetch === 'function'
+        ? globalThis.fetch.bind(globalThis)
+        : globalThis.fetch),
     fs: opts.fs ?? nodeCacheFs(),
     now: opts.now ?? (() => Date.now()),
   };
@@ -299,7 +308,10 @@ async function fetchOnce(
     opts.base === undefined ? {} : { base: opts.base }
   );
   try {
-    const res = await opts.fetchImpl(url, {
+    // Off the object first, then called — never `opts.fetchImpl(...)`, which
+    // would pass `opts` as `this`. See the note where it is bound.
+    const { fetchImpl } = opts;
+    const res = await fetchImpl(url, {
       signal: AbortSignal.timeout(opts.timeoutMs),
       headers: { accept: 'application/json' },
     });

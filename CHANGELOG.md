@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.13.2
+
+**🔴 A live link has never once refreshed in a reader's browser. Now it does.**
+
+The build-time half always worked — the diagram bakes into the page correctly.
+The client half, the part that notices the author has edited since your last
+build, threw on its very first call in every release of this feature, on every
+wrapper, and told nobody.
+
+`fetch` is a WebIDL operation on `Window`: it throws `Illegal invocation` unless
+its `this` **is** the global. The implementation held it on an options object and
+called it as `ctx.fetchImpl(url)` — a method call, so `this` was that plain
+object. The throw landed in a `catch` whose job is to treat a failed request as
+"offline, or blocked by CSP, all the same answer: keep the diagram you have".
+So the page did nothing: no re-render, no *"This diagram has been updated"*
+notice, no console error. Indistinguishable from a diagram that had not changed.
+
+Fixed by binding the default to the global, and by reading the function off the
+object before calling it rather than through it. `reference-resolve.ts` had the
+identical shape at build time; Node's `fetch` tolerates it, which is a large part
+of why the browser half went unexamined for so long, and it is now bound too.
+
+**Why every test passed.** They all injected `vi.fn()`, an ordinary function that
+does not care what `this` is — so the suite could never fail the way the browser
+did. The new test models the real thing: a `fetch` that throws unless `this` is
+the global, reached through the default path with nothing injected. It fails
+against 0.13.1.
+
+Found by driving a real browser at the deployed showcase and instrumenting the
+shipped bundle, after the server side — deployed artifact, API revision, CORS
+headers, the lazy renderer chunk — had each been verified correct.
+
 ## 0.13.1
 
 **A live link on a busy page could go unchecked forever.**

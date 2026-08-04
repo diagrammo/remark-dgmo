@@ -164,8 +164,15 @@ export async function refreshCloudReferences(
   // The inert path, and the common one: no references, no work, no fetch.
   if (blocks.length === 0) return;
 
-  const fetchImpl = options.fetchImpl ?? globalThis.fetch;
-  if (typeof fetchImpl !== 'function') return;
+  // 🔴 `.bind(globalThis)` is what makes this work in a browser at all.
+  // `fetch` is a WebIDL operation on `Window`: it throws
+  // `Illegal invocation` unless its `this` IS the global. Stored on an options
+  // object and invoked as `ctx.fetchImpl(url)`, `this` becomes that plain
+  // object — so the call threw, `refreshOne`'s `catch` swallowed it as "offline
+  // or blocked by CSP", and the page did nothing at all. See the call site.
+  const raw = options.fetchImpl ?? globalThis.fetch;
+  if (typeof raw !== 'function') return;
+  const fetchImpl = options.fetchImpl ? raw : raw.bind(globalThis);
 
   const apiBase = (options.apiBase ?? DEFAULT_API_BASE).replace(/\/+$/, '');
   const schedule = options.schedule ?? defaultSchedule;
@@ -202,7 +209,13 @@ async function refreshOne(
 ): Promise<void> {
   let body: SourceResponse;
   try {
-    const res = await ctx.fetchImpl(
+    // 🔴 Read it off `ctx` FIRST, then call it. `ctx.fetchImpl(url)` is a
+    // method call, so `this` would be `ctx` — and a native `fetch` whose `this`
+    // is a plain object throws `Illegal invocation`, which the catch below then
+    // reports to nobody. This is not hypothetical: it is why a live link never
+    // once refreshed in a reader's browser.
+    const { fetchImpl } = ctx;
+    const res = await fetchImpl(
       `${ctx.apiBase}/public/diagrams/${encodeURIComponent(id)}/source`
     );
     // A withdrawn diagram (410) is deliberately left alone here. The build

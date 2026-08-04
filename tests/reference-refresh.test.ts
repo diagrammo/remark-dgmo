@@ -361,3 +361,52 @@ describe('the default scheduler', () => {
     vi.unstubAllGlobals();
   });
 });
+
+describe('the default fetch, called the way a browser demands', () => {
+  // 🔴 The bug this exists for shipped in every release of the feature and was
+  // invisible from the outside. `fetch` is a WebIDL operation on `Window`: it
+  // throws `Illegal invocation` unless its `this` IS the global. The code held
+  // it on an options object and called `ctx.fetchImpl(url)` — a method call —
+  // so `this` was that plain object, the call threw, and `refreshOne`'s catch
+  // filed it under "offline, or blocked by CSP". No swap, no notice, no error.
+  //
+  // Every test above injects a `vi.fn()`, which is an ordinary function and does
+  // not care what `this` is. That is precisely why none of them caught it, so
+  // this one models the real failure instead.
+  const nativeLike = (body: Record<string, unknown>) =>
+    function (this: unknown): Promise<Response> {
+      if (this !== undefined && this !== globalThis) {
+        throw new TypeError(
+          "Failed to execute 'fetch' on 'Window': Illegal invocation"
+        );
+      }
+      return Promise.resolve(
+        new Response(JSON.stringify(body), { status: 200 })
+      );
+    } as unknown as typeof fetch;
+
+  it('reaches a this-sensitive global fetch when none is injected', async () => {
+    const el = block({
+      'data-dgmo-ref': ID,
+      'data-dgmo-ref-updated': '100',
+      'data-dgmo-ref-version': '0.56.0',
+    });
+    vi.stubGlobal(
+      'fetch',
+      nativeLike({
+        id: ID,
+        source: 'piechart X\n  A 1',
+        dgmoVersion: '0.56.0',
+        updatedAt: 200,
+      })
+    );
+
+    // No fetchImpl — the production path.
+    await refreshCloudReferences({ schedule: now });
+
+    // It got far enough to act on the answer. Before the fix it silently did
+    // nothing at all, which is indistinguishable from "nothing had changed".
+    expect(el.dataset['dgmoRefStale']).toBe('true');
+    vi.unstubAllGlobals();
+  });
+});
