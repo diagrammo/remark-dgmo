@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.14.0
+
+**The step that asks the Cloud what a pointer points at now lives in dgmo.**
+
+Nothing changes for a site that uses this package: the build resolves live links
+exactly as it did, the committed `.dgmo/references/` cache has the same format,
+and the failure table that decides whether a build stops is unchanged. All 128
+tests pass against the moved code without one of them being edited, which is the
+evidence that it is the same behaviour and not a rewrite of it.
+
+What changed is who can reach it. The request, the timeout, the retry, and the
+reading of 200/404/410/5xx into four outcomes used to live here — where four of
+the five docs wrappers could get at it and nothing else could. That is how
+`vitepress-dgmo`, which runs markdown-it and no remark plugin, came to ship a
+release announcing live links it could not render; the Obsidian plugin hit the
+same wall from the other side. It is now `fetchLiveLink` in
+`@diagrammo/dgmo/live-link-resolve`, beside the parser and the card renderer,
+where a live link is a chart type rather than a markdown feature.
+
+What stayed here is everything that is genuinely a **build's** opinion — the
+committed cache, the failure table, the dedupe pool, the CSP notice — because a
+note being opened has no build to stop and no reviewable diff to write into.
+
+🔴 **The `@diagrammo/dgmo` peer floor rises to `>=0.60.0 <1`.** That is the
+release adding the subpath, so an older dgmo fails at module resolution in a
+consumer's build rather than here. A caret on a `0.x` version locks the minor, so
+every wrapper needs an explicit bump — `^0.13.0` will not take 0.14.0.
+
 ## 0.13.2
 
 **🔴 A live link has never once refreshed in a reader's browser. Now it does.**
