@@ -84,16 +84,28 @@ describe('a live link renders as an ordinary block', () => {
     expect(html(t)).toContain('data-dgmo-ref-version="0.56.0"');
   });
 
-  it('accepts all three spellings — parity is the resolver’s job, not ours', async () => {
+  it('accepts the fence spellings — parity is the resolver’s job, not ours', async () => {
+    // 🔴 `![[live-link:<id>]]` is deliberately absent: it is the host document's
+    // markdown, and a fence's content is DGMO. Accepted here until 2026-08-05,
+    // and taught by the showcase content, which is how markdown came to be
+    // nested inside a code fence that was itself inside markdown.
     for (const body of [
       `live-link ${ID}`,
-      `![[live-link:${ID}]]`,
       `https://api.diagrammo.app/public/diagrams/${ID}/source`,
     ]) {
       const t = tree(body);
       await remarkDgmo({ colorMode: 'light', liveLink: liveLink() })(t);
       expect(html(t)).toContain(`data-dgmo-ref="${ID}"`);
     }
+  });
+
+  it('🔴 the note spelling is not a fence spelling', async () => {
+    // It renders as whatever DGMO makes of it — which is nothing — rather than
+    // being silently resolved. `![[…]]` belongs in the document body, where the
+    // host's own transclusion handles it.
+    const t = tree(`![[live-link:${ID}]]`);
+    await remarkDgmo({ colorMode: 'light', liveLink: liveLink() })(t);
+    expect(html(t)).not.toContain(`data-dgmo-ref="${ID}"`);
   });
 });
 
@@ -146,16 +158,14 @@ describe('ON by default, and OFF is a deliberate choice', () => {
     warn.mockRestore();
   });
 
-  it('off: EVERY spelling renders the card, not just the fence one', async () => {
+  it('off: every fence spelling renders the card, not just the keyword one', async () => {
     // The card is produced by rendering a canonical `live-link <id>`, never the
-    // raw fence body — `![[live-link:id]]` and a plain share URL are not
-    // chart-type declarations, so passing the body through would hand two of
-    // the three an "Unsupported chart type" card while the warning promised a
-    // reference card.
+    // raw fence body — a plain share URL is not a chart-type declaration, so
+    // passing the body through would hand it an "Unsupported chart type" card
+    // while the warning promised a reference card.
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     for (const body of [
       `live-link ${ID}`,
-      `![[live-link:${ID}]]`,
       `https://online.diagrammo.app/d/${ID}`,
     ]) {
       const t = tree(body);

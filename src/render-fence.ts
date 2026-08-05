@@ -1,5 +1,5 @@
 import {
-  parseCloudReference,
+  parseCloudReferenceFence,
   type CloudReference,
 } from '@diagrammo/dgmo/cloud-reference';
 import {
@@ -52,7 +52,11 @@ export function classifyFence(
   options: DgmoOptions = {}
 ): ClassifiedFence {
   const fence: ClassifiedFence = { source, meta, location };
-  const ref = parseCloudReference(source);
+  // 🔴 The FENCE parser, not the union. `![[live-link:<id>]]` is the host
+  // document's markdown and a fence's content is DGMO — accepting it here nested
+  // markdown inside a code fence that is itself in markdown. Withdrawn
+  // 2026-08-05 along with the showcase content that taught it.
+  const ref = parseCloudReferenceFence(source);
   if (ref) {
     if (resolveOptions(options).liveLink.enabled) fence.reference = ref;
     else fence.unresolvedLiveLink = ref;
