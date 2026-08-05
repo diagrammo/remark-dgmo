@@ -1,5 +1,35 @@
 # Changelog
 
+## 0.14.1
+
+**`![[live-link:<id>]]` is no longer accepted as the body of a `dgmo` fence.**
+
+It is the host document's markdown — Obsidian's transclusion syntax — and a
+fence's content is DGMO, so writing it there nests markdown inside a code fence
+that is itself inside markdown. It parsed cleanly and read as the category error
+it is. `classifyFence` reached for the union parser, which spans all three
+spellings; it takes `parseCloudReferenceFence` now, which is the keyword form or
+a plain link.
+
+Pasting a **share link** into a fence still works, and should — a URL is not
+markup, and it is what a person does with a link they were handed. The note
+spelling is unaffected in a note **body**, which is the surface it was designed
+for.
+
+⚠️ The shared showcase intro in `dgmo-content` had been advertising the removed
+form, so five docs sites were teaching it. Fixed there in the same pass; rebuild
+a showcase to stop serving it.
+
+🔴 **A patch, deliberately.** On `0.x` a caret locks the MINOR, so every wrapper
+pinning `^0.14.0` reaches this and would never have reached 0.15.0 — a minor
+would have stranded exactly the consumers the fix is for.
+
+⚠️ **The `@diagrammo/dgmo` peer floor rises to `>=0.61.0 <1`**, because
+`parseCloudReferenceFence` first ships in dgmo 0.61.0. The five wrappers still
+declare `>=0.60.0 <1` of their own, which is now looser than what this package
+requires — nothing validates a peer range against a dependency's peers, so that
+is a latent trap for anyone who pins dgmo at 0.60.x.
+
 ## 0.14.0
 
 **The step that asks the Cloud what a pointer points at now lives in dgmo.**
