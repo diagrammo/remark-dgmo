@@ -57,7 +57,9 @@
     "README.md",
     "LICENSE"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/client-render.js"
+  ],
   "engines": {
     "node": ">=20.6"
   },

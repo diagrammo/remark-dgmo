@@ -263,7 +263,7 @@ remarkDgmo({ liveLink: { enabled: false } });
 ```
 
 Switched off, a live-link fence renders a small card naming the diagram and
-linking through to it, plus a hover-revealed *"Show this diagram here"* link to
+linking through to it, plus a hover-revealed _"Show this diagram here"_ link to
 the guide, and the build warns naming the file and line. Nothing is fetched. See
 the [live links guide](https://diagrammo.app/docs/live-links/).
 
@@ -317,6 +317,20 @@ rebuilds is the case that wants it — opt in:
 import 'remark-dgmo/client.js';
 import 'remark-dgmo/client-render.js'; // adds the renderer to your bundle
 ```
+
+That second line registers a renderer by running and exports nothing, so it
+needs a `remark-dgmo` **newer than 0.14.1** to survive your build: up to and
+including that version the package declared itself free of side effects, which
+licensed bundlers to delete the import outright — silently, leaving you the link and no renderer. If
+you are wiring this from application code rather than a side-effect import, a
+dynamic `import('remark-dgmo/client-render.js')` works on any version and is
+what the framework wrappers do.
+
+Using a wrapper? Each one has its own way in, and setting `refresh: 'render'`
+without it now tells you so at build time: `astro-dgmo` and
+`docusaurus-plugin-dgmo` inject the runtime for you, while `fumadocs-dgmo` and
+`nextra-dgmo` want `<DgmoRenderClient />` mounted and `vitepress-dgmo` wants
+`setupDgmoRender()` called in your theme.
 
 Even then, the client refuses a swap it cannot make safely: a renderer version
 that disagrees with the one that baked the page, or a new diagram that would

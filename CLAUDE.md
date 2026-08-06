@@ -28,6 +28,8 @@ Framework-agnostic core that renders ` ```dgmo ` fences at build time. Published
 
 So the default is **notify, not re-render**: a moved diagram gets a link to the live one. Re-rendering is opt-in via the separate `remark-dgmo/client-render.js` entry — the only module that names the renderer, so the only graph a bundler can follow. That file imports nothing, not even from this package, and declares nothing at top level, because hosts concatenate both client files into one script scope (Astro's `injectScript`) and a second declaration fails the build. The handshake is a `globalThis.__dgmoReferenceRenderer` thunk plus a `dgmo:renderer-ready` event. Keep it that way.
 
+🔴 **`sideEffects` must keep naming `./dist/client-render.js`.** That module exports nothing and registers by running, so the documented `import 'remark-dgmo/client-render.js'` is a side-effect import — and a blanket `"sideEffects": false` is a bundler's licence to delete it. It did: measured with esbuild against 0.14.0 on 2026-08-06, the import compiled to **75 bytes with zero registrations**, silently, so `refresh: 'render'` did nothing on every host that imports rather than inlines. `astro-dgmo` was unaffected only because `injectScript` ships the file's bytes, which is exactly why nobody saw it. `tests/side-effects.test.ts` fails if the field reverts. A **dynamic** `import()` survives on any version — that is what the four other wrappers use.
+
 Referenced diagrams need `connect-src https://api.diagrammo.app` in a host's CSP; without it the baked diagram still renders and simply never refreshes.
 
 ## Build shape

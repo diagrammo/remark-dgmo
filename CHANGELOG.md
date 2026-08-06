@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased
+
+🔴 **`import 'remark-dgmo/client-render.js'` was being deleted from builds, and
+that is why re-rendering a moved live link only ever worked on `astro-dgmo`.**
+
+The module registers a renderer by running and exports nothing, so the
+documented opt-in is a side-effect import — and this package declared
+`"sideEffects": false`, which is a bundler's licence to drop exactly that.
+Measured with esbuild against 0.14.0 on 2026-08-06: the import compiled to **75
+bytes carrying zero registrations**, with no error and no warning. The page kept
+showing _"This diagram has been updated"_ forever, and nothing anywhere could
+say why.
+
+`astro-dgmo` escaped it only because it injects the file's BYTES rather than an
+import, which is precisely how the defect stayed invisible while four wrappers
+were unable to honour the setting at all.
+
+`sideEffects` now names `./dist/client-render.js`, and a test fails if it goes
+back to a blanket `false`. Nothing else changes: no new exports, no behaviour
+change for a site on the default `refresh: 'notify'`.
+
 ## 0.14.1
 
 **`![[live-link:<id>]]` is no longer accepted as the body of a `dgmo` fence.**
@@ -72,7 +93,7 @@ its `this` **is** the global. The implementation held it on an options object an
 called it as `ctx.fetchImpl(url)` — a method call, so `this` was that plain
 object. The throw landed in a `catch` whose job is to treat a failed request as
 "offline, or blocked by CSP, all the same answer: keep the diagram you have".
-So the page did nothing: no re-render, no *"This diagram has been updated"*
+So the page did nothing: no re-render, no _"This diagram has been updated"_
 notice, no console error. Indistinguishable from a diagram that had not changed.
 
 Fixed by binding the default to the global, and by reading the function off the
@@ -102,7 +123,7 @@ can keep a browser busy long enough that "idle" never arrives.
 
 The symptom is the feature appearing dead rather than broken: the diagram had
 changed, the API said so, and the page did nothing — no re-render, and no
-*"This diagram has been updated"* notice either, because the callback that
+_"This diagram has been updated"_ notice either, because the callback that
 produces both had not run.
 
 The asymmetry was the tell. A browser **without** `requestIdleCallback` fell
@@ -164,8 +185,8 @@ live-link dgm_01HQ3RSTUV
 
 `cloud <id>` no longer resolves — it is not deprecated, it simply stops being a
 live link. Same for the note spelling: `![[cloud:<id>]]` becomes
-`![[live-link:<id>]]`. `cloud` named *where the thing lives*; `live-link` names
-*what it is*, and it is the phrase the publish dialog itself uses, so one word
+`![[live-link:<id>]]`. `cloud` named _where the thing lives_; `live-link` names
+_what it is_, and it is the phrase the publish dialog itself uses, so one word
 now spans both sides of the exchange.
 
 **2. The option is `liveLink`, not `references`.**
@@ -175,7 +196,7 @@ remarkDgmo({ liveLink: { enabled: false } });
 ```
 
 Named for the word people type in the fence. It also resolves a collision: in
-Diagrammo Cloud a *reference* already means a third-party site embedding a
+Diagrammo Cloud a _reference_ already means a third-party site embedding a
 published diagram, and the two senses sat a paragraph apart in this package.
 
 **3. 🔴 Live links now resolve by DEFAULT.** A site that upgrades and does
@@ -197,13 +218,13 @@ remarkDgmo({ liveLink: { enabled: false } });
 
 On that path a live-link fence renders the **reference card** — the same card the
 CLI and the desktop app draw — linking through to the diagram at `/d/<id>`, plus
-a hover-revealed *"Show this diagram here"* link to the guide, and the build logs
+a hover-revealed _"Show this diagram here"_ link to the guide, and the build logs
 a warning naming the option and the source line. It is no
 longer an error block; since `live-link` became a real chart type, calling a
 valid fence broken would take deliberate work.
 
 `refresh` is unchanged and still defaults to `notify`. Turning live links on is
-cheap; turning them *fully* on is not — `render` pulls the client renderer into
+cheap; turning them _fully_ on is not — `render` pulls the client renderer into
 your bundle, which took the astro fixture from 1 chunk / 7,990 gzipped bytes to
 90 chunks / 634,199.
 
