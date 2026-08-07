@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.14.2
 
 🔴 **`import 'remark-dgmo/client-render.js'` was being deleted from builds, and
 that is why re-rendering a moved live link only ever worked on `astro-dgmo`.**
