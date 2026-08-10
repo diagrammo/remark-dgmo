@@ -157,3 +157,26 @@ describe('renderDgmoBlock — legacyClassNames (AC-RD6)', () => {
     expect(html).toContain('dgmo--diagram');
   });
 });
+
+describe('a map fence gets its basemap data without the host asking', () => {
+  // A POI resolved by name, so it needs the real gazetteer and cannot pass
+  // against an empty basemap.
+  const MAP = `map Port Calls
+
+poi Denver`;
+
+  it('renders the map rather than the "no basemap data" card', async () => {
+    // dgmo reads nothing off disk on its own, so before this plugin passed a
+    // loader EVERY map fence on all five wrappers baked an error card. Nothing
+    // in the fence or the integration options says "map" — the loader is
+    // handed over unconditionally and invoked only if the source turns out to
+    // be one.
+    const { html, diagnostics } = await renderDgmoBlock(MAP, null, {
+      colorMode: 'light',
+    });
+    expect(html).not.toContain('no basemap data');
+    expect(html).not.toContain("Couldn't render this diagram");
+    expect(diagnostics.some((d) => d.severity === 'error')).toBe(false);
+    expect(html).toContain('Denver');
+  });
+});

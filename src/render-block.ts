@@ -78,6 +78,24 @@ export async function renderDgmoBlock(
     onWarn: (message) => {
       console.warn(`[remark-dgmo] ${message}${locationSuffix(location)}`);
     },
+    // A map fence gets its basemap assets from here, because there is nowhere
+    // else they could come from: dgmo reads nothing off disk on its own, so
+    // without this a ` ```dgmo ` map renders the "no basemap data" error card
+    // on every one of the five wrappers. This module only ever runs inside a
+    // build, so reaching for the Node loader is not an environment guess.
+    //
+    // A thunk, not the loader itself, for two reasons. The `import()` runs only
+    // when the fence turns out to be a map, so a docs site with no maps never
+    // pays for `/advanced`; and naming `loadMapData` through a dynamic import
+    // means an older `@diagrammo/dgmo` — one whose `/block` predates the
+    // `mapData` option — still resolves, ignores the option, and behaves
+    // exactly as it does today rather than failing to load. That is what keeps
+    // this off the peer floor. NOT the bundling argument that governs
+    // `client-render.ts`: nothing ships this file to a browser.
+    mapData: async () => {
+      const { loadMapData } = await import('@diagrammo/dgmo/advanced');
+      return loadMapData();
+    },
   };
   if (block.title !== undefined) blockOptions.title = block.title;
   if (extra.dataAttributes) {

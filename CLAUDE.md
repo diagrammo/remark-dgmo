@@ -12,9 +12,18 @@ Framework-agnostic core that renders ` ```dgmo ` fences at build time. Published
 - `@diagrammo/dgmo/cloud-reference` — the `CloudReference` type (`reference-resolve.ts`)
 - `@diagrammo/dgmo/live-link-resolve` — `fetchLiveLink`, the request and the reading of 200/404/410/5xx (`reference-resolve.ts`). 🔴 **This package no longer owns that step.** It moved into dgmo on 2026-08-04 so the Obsidian plugin and the custom element could have it too; what stays here is the committed cache, the failure table, and what stops a build — a build's opinions, which a note being opened does not share. Re-implementing the response reading here would recreate exactly the split that shipped `vitepress-dgmo` announcing live links it could not render
 - `@diagrammo/dgmo/countdown`, `@diagrammo/dgmo/clock` — `startCountdowns` / `startClocks` in `client.ts`
+- `@diagrammo/dgmo/advanced` — `loadMapData`, reached by a **dynamic** import inside `render-block.ts` and nowhere else
 - root `normalizeSvgForEmbed`, re-exported as `normalizeSvg`
 
 🔴 **A new subpath import moves the peer floor.** Bump it here, then bump the same range on all five wrappers and their devDeps — a stale wrapper installs an older dgmo and dies at module-resolution time in a consumer's build, not in ours.
+
+**Map fences: this package hands over the basemap data, and no wrapper has to.** dgmo reads nothing off disk on its own, so a ` ```dgmo ` map baked the "no basemap data" error card on all five wrappers until 2026-08-10. `render-block.ts` now passes `mapData` on every block — a thunk that dynamically imports `loadMapData`, so a docs site with no maps never resolves `/advanced`, and the assets are read only for a fence that turns out to be a map. This module only ever runs inside a build, so reaching for the Node loader is not an environment guess.
+
+**Which dgmo a map fence actually needs.** The peer floor stays where it is on purpose, so this is the one feature whose behaviour varies across the accepted range: on **0.61** a map renders because dgmo still read the basemaps off disk itself; on **0.62 – 0.65** it renders the error card no matter what this package does, because `/block` had no way to accept them; from **0.66** it renders because of the passthrough here. Everything else this package does works across the whole range, which is why maps alone do not justify forcing every wrapper consumer onto a newer dgmo.
+
+The dynamic import is what keeps `/advanced` **off** the peer floor: an older `@diagrammo/dgmo`, one whose `/block` predates the `mapData` option, still resolves and simply ignores the option. That is the opposite of the bundling argument governing `client-render.ts` — nothing ships `render-block.ts` to a browser, so a build-time dynamic import here costs an adopter nothing.
+
+⚠️ The **browser** re-render path (`reference-refresh.ts` → the opt-in renderer) passes no `mapData` and has nowhere to get it, so a referenced map that changes after a build is re-rendered as the error card. Notify-not-render, the default, is unaffected. Fixing it needs a fetch-based loader, not this one.
 
 ## Client runtime — `client.js` / `client.css`
 
