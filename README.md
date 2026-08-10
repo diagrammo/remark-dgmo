@@ -286,6 +286,9 @@ shows up in your pull request as a source diff you can read.
 | id gone, cache present           | succeeds, with a warning          | last known good           |
 | the author unshared it           | succeeds, with a warning          | a "no longer shared" card |
 
+A withdrawn diagram is also taken down **between** builds, by the client script
+— see [When an author stops showing a diagram](#when-an-author-stops-showing-a-diagram).
+
 Set `liveLink: { offline: true }` to skip the network entirely and build from
 the cache alone.
 
@@ -336,6 +339,20 @@ Even then, the client refuses a swap it cannot make safely: a renderer version
 that disagrees with the one that baked the page, or a new diagram that would
 reflow your layout. Those fall back to the same small link, and your diagram is
 left exactly as it was.
+
+### When an author stops showing a diagram
+
+One answer is not a refresh at all. If the author has **withdrawn** the diagram,
+the page replaces it with the same *"This diagram is no longer shared."* card
+your build draws — without the renderer, and without waiting for your next
+build. A site that builds weekly would otherwise keep publishing withdrawn work
+for a week, and one that has stopped building would keep publishing it forever.
+
+It is the only case where this script takes something off your page rather than
+adding a note beside it, and it needs nothing from you. Every other answer — a
+missing diagram, an outage, a timeout, a request your CSP blocked — leaves the
+baked diagram exactly where it is, because those mean *cannot say* rather than
+*taken back*.
 
 ## Working reference site
 

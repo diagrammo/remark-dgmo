@@ -28,6 +28,20 @@
  * mentions the renderer — and therefore the only one whose graph a bundler can
  * follow.
  *
+ * The one import here is `./tombstone-card.js`, for a single string. That file
+ * imports nothing at all, so it costs the adopter a sentence rather than a
+ * graph — but it is the reason the rule above is stated as "no renderer" and
+ * not "no imports": check what a new one drags in before adding it.
+ *
+ * ## The one thing it removes
+ *
+ * A **withdrawn** diagram (`410`) is taken off the page and replaced with the
+ * same card the build draws. That is the single case where this script changes
+ * what a reader can see rather than adding a note beside it, and it is the case
+ * where leaving the page alone means publishing something its author took back.
+ * Every other answer — 404, 5xx, a timeout, a blocked request — leaves the
+ * baked diagram exactly where it is.
+ *
  * ## What it must never do
  *
  * Break the page it runs on. This code executes on somebody else's site, on a
@@ -41,6 +55,8 @@
  * loads even though it does not use the remark plugin. On a page with no
  * `[data-dgmo-ref]` it must do nothing at all, and there is a test for that.
  */
+
+import { TOMBSTONE_TEXT } from './tombstone-card.js';
 
 /** Where the source endpoint lives. Overridable for self-host and tests. */
 const DEFAULT_API_BASE = 'https://api.diagrammo.app';
@@ -218,10 +234,32 @@ async function refreshOne(
     const res = await fetchImpl(
       `${ctx.apiBase}/public/diagrams/${encodeURIComponent(id)}/source`
     );
-    // A withdrawn diagram (410) is deliberately left alone here. The build
-    // decides what a tombstone looks like, with a warning the site owner can
-    // act on; silently blanking a rendered diagram in a reader's browser is
-    // not this code's call to make.
+    // 🔴 A withdrawn diagram (410) stops drawing, here, in the reader's
+    // browser — changed 2026-08-10 (issue 101), and the reasoning it reverses
+    // is worth keeping because it was half right.
+    //
+    // It used to fall into `!res.ok` and do nothing, on the grounds that
+    // "silently BLANKING a rendered diagram in a reader's browser is not this
+    // code's call to make". The objection was to leaving a hole, and it still
+    // stands — nothing here blanks anything. What it draws is the same
+    // tombstone the BUILD draws from the same `410`, so the client is not
+    // inventing a policy, it is applying the one already chosen a few files
+    // away.
+    //
+    // What settled it is a sentence we print to the publisher beside the Stop
+    // showing button: "Stop showing replaces the live chart with a note that it
+    // is no longer shared". That is the only specification of Stop showing
+    // anywhere. The build kept it, Obsidian kept it, the desktop app kept it,
+    // the plain-page element kept it — and this path, the most public of the
+    // five and the one running on a site that may never rebuild, did not.
+    //
+    // Only 410. A 404, a 5xx and a timeout still leave the baked diagram
+    // exactly where it is: those mean "cannot say", and withdrawal is the one
+    // answer that is deliberate and final.
+    if (res.status === 410) {
+      for (const el of els) drawTombstone(el, ctx.doc);
+      return;
+    }
     if (!res.ok) return;
     body = (await res.json()) as SourceResponse;
   } catch {
@@ -337,6 +375,49 @@ function aspect(el: HTMLElement): number | null {
   const [, , w, h] = box as [number, number, number, number];
   if (!w || !h) return null;
   return w / h;
+}
+
+/**
+ * Turn a baked block into the withdrawn card, in place (issue 101).
+ *
+ * 🔴 It mutates the block rather than replacing it with `tombstoneCardHtml`'s
+ * markup, and the difference matters: the wrapper carries `data-dgmo-ref` and
+ * its siblings, and a fresh element would drop them — so a second pass would
+ * stop recognising this block as a reference at all. Same classes, same role,
+ * same sentence; different route to it.
+ *
+ * The sentence itself is imported rather than retyped. It is the one thing that
+ * must not drift from what the build draws, and it is already shared with the
+ * API's own `TOMBSTONE_DETAIL` for the same reason — a reader who follows the
+ * link must not be told two different stories.
+ *
+ * 🔴 No title, no space, no author, no thumbnail. Carrying nothing identifying
+ * is what keeps a per-diagram privacy setting out of the product (Cloud story
+ * 7.13); see `tombstone-card.ts` before adding anything here.
+ */
+function drawTombstone(el: HTMLElement, doc: Document): void {
+  if (el.dataset['dgmoRefWithdrawn'] === 'true') return;
+  el.dataset['dgmoRefWithdrawn'] = 'true';
+
+  // The base class the host chose, read off the block instead of assumed: the
+  // emitter writes `<base> <base>--<variant> [legacy…]`, so the first class IS
+  // the base, and a site using `className: 'diagram'` gets its own names.
+  const base = el.classList[0] ?? 'dgmo';
+  el.classList.remove(`${base}--diagram`, `${base}--showcase`);
+  el.classList.add(`${base}--tombstone`);
+  // `note`, not `alert`. Nothing went wrong — somebody exercised a control they
+  // were given, and a screen reader announcing an emergency would be wrong
+  // about what happened.
+  el.setAttribute('role', 'note');
+
+  const text = doc.createElement('p');
+  text.className = `${base}-tombstone-text`;
+  text.textContent = TOMBSTONE_TEXT;
+  // Emptied by hand rather than with `replaceChildren`, which is newer than the
+  // oldest browser this script has any business breaking on. It runs on
+  // somebody else's site.
+  el.textContent = '';
+  el.appendChild(text);
 }
 
 /**

@@ -16,6 +16,7 @@ import {
   type RendererLike,
   setReferenceRenderer,
 } from '../src/reference-refresh.js';
+import { TOMBSTONE_TEXT, tombstoneCardHtml } from '../src/tombstone-card.js';
 
 const ID = 'dgm_01HQ3';
 
@@ -219,19 +220,23 @@ describe('a refresh can never break the page it runs on', () => {
     expect(el.innerHTML).toBe(before);
   });
 
-  it('leaves a withdrawn diagram to the next build rather than blanking it', async () => {
-    const el = block({ 'data-dgmo-ref': ID, 'data-dgmo-ref-updated': '100' });
-    const before = el.innerHTML;
+  it.each([404, 429, 500, 503])(
+    'leaves the diagram alone on a %i, which means "cannot say"',
+    async (status) => {
+      const el = block({ 'data-dgmo-ref': ID, 'data-dgmo-ref-updated': '100' });
+      const before = el.innerHTML;
 
-    await refreshCloudReferences({
-      fetchImpl: vi.fn(() =>
-        Promise.resolve(new Response('{}', { status: 410 }))
-      ) as unknown as typeof fetch,
-      schedule: now,
-    });
+      await refreshCloudReferences({
+        fetchImpl: vi.fn(() =>
+          Promise.resolve(new Response('{}', { status }))
+        ) as unknown as typeof fetch,
+        schedule: now,
+      });
 
-    expect(el.innerHTML).toBe(before);
-  });
+      expect(el.innerHTML).toBe(before);
+      expect(el.querySelector('.dgmo-tombstone-text')).toBeNull();
+    }
+  );
 
   it('marks a block at most once', async () => {
     const el = block({
@@ -248,6 +253,119 @@ describe('a refresh can never break the page it runs on', () => {
     }
 
     expect(el.querySelectorAll('.dgmo-updated')).toHaveLength(1);
+  });
+});
+
+// ============================================================
+// A withdrawn diagram stops drawing (issue 101)
+// ============================================================
+//
+// The one case where this script takes something OFF the page. It is also the
+// one case where leaving the page alone means publishing content an author took
+// back — which is why it reverses the "the build decides" position that stood
+// here until 2026-08-10, without reversing that position's actual objection:
+// nothing below leaves a hole.
+
+describe('when the author has stopped showing it', () => {
+  const withdrawn = () =>
+    vi.fn(() =>
+      Promise.resolve(new Response('{}', { status: 410 }))
+    ) as unknown as typeof fetch;
+
+  it('replaces the diagram with the card the build would have drawn', async () => {
+    const el = block({
+      'data-dgmo-ref': ID,
+      'data-dgmo-ref-updated': '100',
+      class: 'dgmo dgmo--diagram',
+    });
+
+    await refreshCloudReferences({ fetchImpl: withdrawn(), schedule: now });
+
+    expect(el.querySelector('svg')).toBeNull();
+    const text = el.querySelector('.dgmo-tombstone-text');
+    expect(text?.textContent).toBe(TOMBSTONE_TEXT);
+    // Same shape the build emits: the tombstone class, the diagram variant
+    // gone, and `note` rather than `alert` — nothing went wrong here.
+    expect([...el.classList].sort()).toEqual(['dgmo', 'dgmo--tombstone']);
+    expect(el.getAttribute('role')).toBe('note');
+    // 🔴 No link, no id, no title. What it says is all it says.
+    expect(el.querySelector('a')).toBeNull();
+    expect(el.textContent).not.toContain(ID);
+  });
+
+  it('says exactly what the build says, character for character', async () => {
+    // The two hosts of one sentence. A reader who follows the link must not be
+    // told a second story, so this compares against the build's own card
+    // rather than against a copy of the string typed here.
+    const el = block({ 'data-dgmo-ref': ID, class: 'dgmo dgmo--diagram' });
+
+    await refreshCloudReferences({ fetchImpl: withdrawn(), schedule: now });
+
+    const built = document.createElement('div');
+    built.innerHTML = tombstoneCardHtml();
+    expect(el.querySelector('.dgmo-tombstone-text')?.textContent).toBe(
+      built.querySelector('.dgmo-tombstone-text')?.textContent
+    );
+    expect(el.getAttribute('role')).toBe(
+      built.firstElementChild?.getAttribute('role')
+    );
+  });
+
+  it('wears the host’s own class name rather than assuming ours', async () => {
+    const el = block({
+      'data-dgmo-ref': ID,
+      class: 'diagram diagram--showcase legacy-thing',
+    });
+
+    await refreshCloudReferences({ fetchImpl: withdrawn(), schedule: now });
+
+    expect([...el.classList].sort()).toEqual([
+      'diagram',
+      'diagram--tombstone',
+      'legacy-thing',
+    ]);
+    expect(el.querySelector('.diagram-tombstone-text')).not.toBeNull();
+  });
+
+  it('stays a reference, so a later pass still recognises it', async () => {
+    // 🔴 The block is mutated rather than replaced precisely so `data-dgmo-ref`
+    // survives. Drop it and the second pass stops seeing the block at all,
+    // which is how a withdrawn diagram would come back on a soft navigation.
+    const el = block({ 'data-dgmo-ref': ID, 'data-dgmo-ref-updated': '100' });
+    const fetchImpl = withdrawn();
+
+    await refreshCloudReferences({ fetchImpl, schedule: now });
+    await refreshCloudReferences({ fetchImpl, schedule: now });
+
+    expect(el.dataset['dgmoRef']).toBe(ID);
+    expect(el.querySelectorAll('.dgmo-tombstone-text')).toHaveLength(1);
+  });
+
+  it('withdraws every block naming it, on one request', async () => {
+    const a = block({ 'data-dgmo-ref': ID });
+    const b = block({ 'data-dgmo-ref': ID });
+    const fetchImpl = withdrawn();
+
+    await refreshCloudReferences({ fetchImpl, schedule: now });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    for (const el of [a, b]) {
+      expect(el.querySelector('.dgmo-tombstone-text')).not.toBeNull();
+    }
+  });
+
+  it('needs no renderer — the card is a sentence, not a drawing', async () => {
+    const load = vi.fn(renderer('<figure><svg viewBox="0 0 1 1"></svg></figure>'));
+    const el = block({ 'data-dgmo-ref': ID });
+
+    await refreshCloudReferences({
+      fetchImpl: withdrawn(),
+      loadRenderer: load,
+      schedule: now,
+    });
+
+    expect(load).not.toHaveBeenCalled();
+    expect(el.querySelector('.dgmo-tombstone-text')).not.toBeNull();
   });
 });
 
