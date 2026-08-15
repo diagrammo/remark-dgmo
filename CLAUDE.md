@@ -47,7 +47,11 @@ Referenced diagrams need `connect-src https://api.diagrammo.app` in a host's CSP
 
 ## Publishing
 
-This publishes **before** the host wrappers and must be live on npm first — their CI installs the new version at build time, so a wrapper tagged in the same breath builds against the old one.
+This publishes **before** the host wrappers and must be live on npm first — their CI installs the new version at build time, so a wrapper released in the same breath builds against the old one. `scripts/release.sh` verifies the registry actually serves the new version at the end of a run, and that — not a green run — is what says the wrappers may go.
+
+**The publish happens in CI, not on the laptop, as of 2026-08-14.** `scripts/release.sh remark-dgmo X.Y.Z` bumps, commits, tags, pushes, then dispatches `release.yml` **at that tag** and watches it. The workflow is `workflow_dispatch` only (optional `tag` input) so a release cannot run twice — a bare tag push ships nothing — and it publishes `npm publish --access public --provenance` under `permissions: id-token: write`, i.e. **npm Trusted Publishing (OIDC)**, with no stored credential on the path. The same shape applies to all five wrappers, each from its own repo's `release.yml`.
+
+🔴 **A trusted publisher has to be registered by a human at npmjs.com per package, and as of 2026-08-14 none of the six is** — package → Settings → Trusted Publisher → GitHub Actions, organization `diagrammo`, repository the package's own, workflow filename `release.yml`, environment blank, allowed action `npm publish`. `scripts/npm-trusted-publishing.sh` walks them; there is no API and it cannot be automated, so until it is done the publish step fails to **authenticate**. A non-empty `npm view <pkg> dist.attestations` is the proof it published from CI.
 
 ⚠️ **A caret on a `0.x` version locks the minor**, so every wrapper needs an explicit dependency bump on each minor here — `^0.10.0` will not take 0.11.0. Landing a minor here is not done until those bumps are done. All five wrappers were caught up as of 2026-08-03 (`remark-dgmo ^0.12.0`, peer `@diagrammo/dgmo >=0.58.0 <1`); 0.13.0 needs the same sweep again — check with the `jq` sweep rather than trusting this sentence:
 

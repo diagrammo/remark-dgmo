@@ -24,7 +24,7 @@ your-wrapper/
 │   ├── RELEASE_CHECKLIST.md           # pre-flight + smoke
 │   └── workflows/
 │       ├── ci.yml                     # typecheck/test/build + fixture build
-│       └── release.yml                # tag-driven npm publish with guards
+│       └── release.yml                # dispatched npm publish over OIDC, with guards
 ├── src/
 │   ├── index.ts                       # main host-shaped export
 │   ├── config.ts                      # defineConfig / withDgmo helper (if applicable)
@@ -247,18 +247,27 @@ Wrappers are responsible for keeping host-specific symbols (`onRouteDidUpdate`, 
 
 Disable `test:e2e` only when the host's static build is broken upstream. Document the reason inline in the workflow with the exact error trace.
 
-`release.yml` runs on `v*` tag push:
+`release.yml` runs on `workflow_dispatch` only, with an optional `tag` input — tag triggers are off so a release cannot run twice, and pushing a `v*` tag publishes nothing on its own. `scripts/release.sh <wrapper> X.Y.Z` tags, pushes, dispatches the workflow at that tag, watches it, and then checks npm actually serves the version (2026-08-14):
 
 ```yaml
+- Resolve the tag being released      # from the `tag` input or GITHUB_REF_NAME, shape-validated;
+                                      # every later step reads it, so a run started the wrong way
+                                      # fails here instead of publishing a version named `main`
+- Checkout at that tag
 - Verify tag version matches package.json
 - Guard against dev-loop leakage:
     grep for `file:`/`link:` deps on remark-dgmo → fail
     grep for `pnpm.overrides` key in package.json → fail
+- Is this version already on npm? → skip the publish
+                                      # so a re-run does not die on npm's "cannot publish over the
+                                      # previously published versions", which reads like an auth error
 - pnpm install / typecheck / test / build
-- npm publish --access public --provenance # Trusted Publishers via OIDC
+- npm publish --access public --provenance # npm Trusted Publishing (OIDC), permissions: id-token: write
 - Wait for npm registry to surface the new version (6× retry, 10s sleep)
-- Create GitHub release with auto-generated notes
+- Create GitHub release with an explicit `tag_name`
 ```
+
+🔴 **No stored credential is on that path, which means the package cannot publish until a human registers its trusted publisher at npmjs.com** — package → Settings → Trusted Publisher → GitHub Actions, organization `diagrammo`, repository the wrapper's own, workflow filename `release.yml`, environment blank, allowed action `npm publish`. There is no API for it. As of 2026-08-14 no wrapper is registered, so a dispatched run fails to **authenticate** at the publish step; `npm view <pkg> dist.attestations` is empty until one has published from CI.
 
 ## 11. Issue templates
 
@@ -287,6 +296,7 @@ The "wrong repo" hints catch most mis-routed bugs at file-time.
 - [ ] Copy `.github/{ISSUE_TEMPLATE/bug.yml,PULL_REQUEST_TEMPLATE.md,RELEASE_CHECKLIST.md,workflows/}` and swap the host name.
 - [ ] Verify dev server + production build both render the four shapes. If build is broken upstream, document inline and disable the e2e CI step.
 - [ ] Verify `npm pack --dry-run` excludes `tests/`.
+- [ ] Register the new package's trusted publisher at npmjs.com (§10) — a human step with no API, and its first dispatched release cannot authenticate without it.
 - [ ] Cross-link the new fixture from `remark-dgmo`'s README "Working reference site" section.
 
 Done. The new wrapper inherits the same regression net, install ergonomics, and bug-routing as the existing two.
