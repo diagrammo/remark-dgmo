@@ -1,21 +1,36 @@
 name: Release
 
-# Tag trigger disabled 2026-07-22 to cut Actions minutes. Releases are done
-# locally (see the workspace release skill / release checklist), so a tag-driven
-# run was spending minutes repeating work already done by hand.
+# 🔴 THIS WORKFLOW IS THE PUBLISHER as of 2026-08-14. It authenticates to npm
+# over Trusted Publishing (OIDC) — there is no stored credential anywhere, and
+# the local `npm publish` path it replaced is going away: npm strips direct
+# publish from bypass-2FA tokens in January 2027.
+# https://github.blog/changelog/2026-07-31-restricting-npm-bypass-2fa-granular-access-tokens/
 #
-# 🔴 The reason recorded here originally — "the org NPM_TOKEN is broken" — was a
-# WRONG DIAGNOSIS, retracted 2026-07-31. The token authenticates fine, for scoped
-# and unscoped packages alike. The CI runs that looked like auth failures say
-# "You cannot publish over the previously published versions", because a local
-# publish had already gone out. Read the failing run own log before re-deriving
-# it; a red run kept confirming the story for weeks.
+# 🔴 The trusted-publisher registration on npmjs.com names this REPO and this
+# FILENAME. Renaming or moving this file stops publishing until someone updates
+# the registration by hand at npmjs.com → the package → Settings → Trusted
+# publisher. A token cannot do it — npm removed that power from bypass-2FA
+# tokens on 2026-07-31.
 #
-# So: rotating the token will NOT restore this trigger and is not a precondition
-# for it. Restoring it is a deliberate choice about spending Actions minutes.
-# (The token does still expire ~2026-08-15 — that is a real deadline, unrelated.)
+# Dispatch-only on purpose: `scripts/release.sh` in the workspace bumps, tags,
+# pushes, and then dispatches this workflow at the tag. By hand:
+#   gh workflow run release.yml -R diagrammo/remark-dgmo --ref vX.Y.Z
+#
+# Actions minutes: this repo is PUBLIC, so runs are free. The tag trigger came
+# off 2026-07-22 to save minutes that were never being billed (verified
+# 2026-08-14) — the cost worth avoiding is a run firing twice, not its minutes.
+#
+# 🔴 The note that used to sit here — "the org NPM_TOKEN is broken" — was a WRONG
+# DIAGNOSIS, retracted 2026-07-31. No workflow in this repo has read a token
+# since. A red run saying "cannot publish over the previously published
+# versions" means a local publish beat CI to it; read the run's own log.
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release, e.g. v0.14.4. Leave blank when dispatching on a tag ref.'
+        required: false
+        type: string
 
 jobs:
   publish:
@@ -24,8 +39,28 @@ jobs:
       contents: write
       id-token: write
     steps:
+      # Dispatching at a tag ref makes GITHUB_REF_NAME the tag; the `tag` input
+      # is the escape hatch for a dispatch from a branch. Everything downstream
+      # reads these outputs rather than GITHUB_REF_NAME, so a run started the
+      # wrong way fails here with a readable message instead of publishing a
+      # version named `main`.
+      - name: Resolve the tag being released
+        id: target
+        run: |
+          TAG="${{ inputs.tag }}"
+          [ -n "$TAG" ] || TAG="$GITHUB_REF_NAME"
+          case "$TAG" in
+            v[0-9]*) ;;
+            *) echo "::error::'$TAG' is not a version tag. Dispatch on a tag ref, or pass tag=vX.Y.Z."; exit 1 ;;
+          esac
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          echo "Releasing $TAG"
+
       - name: Checkout
         uses: actions/checkout@v6
+        with:
+          ref: ${{ steps.target.outputs.tag }}
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v5
@@ -41,7 +76,7 @@ jobs:
 
       - name: Verify tag matches package.json
         run: |
-          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          TAG_VERSION="${{ steps.target.outputs.version }}"
           PKG_VERSION=$(node -p "require('./package.json').version")
           echo "tag=$TAG_VERSION pkg=$PKG_VERSION"
           if [ "$PKG_VERSION" != "$TAG_VERSION" ]; then
@@ -57,7 +92,7 @@ jobs:
         # Promote a rehearsal to stable by tagging the same commit `vX.Y.Z`
         # (no leading rc suffix) and running this workflow again.
         run: |
-          TAG="${GITHUB_REF_NAME}"
+          TAG="${{ steps.target.outputs.tag }}"
           if [[ "$TAG" == *-rc* || "$TAG" == *-rehearsal* ]]; then
             echo "tag=rehearsal" >> "$GITHUB_OUTPUT"
             echo "prerelease=true"  >> "$GITHUB_OUTPUT"
@@ -78,16 +113,32 @@ jobs:
       - name: Build
         run: pnpm build
 
+      # Re-running a release must be safe. npm rejects a duplicate version with
+      # "You cannot publish over the previously published versions", which reads
+      # as a credential failure and has been misread as one here before.
+      - name: Is this version already on npm?
+        id: npm_state
+        run: |
+          VERSION="${{ steps.target.outputs.version }}"
+          if npm view "remark-dgmo@$VERSION" version >/dev/null 2>&1; then
+            echo "already=true" >> "$GITHUB_OUTPUT"
+            echo "✓ npm already has $VERSION — skipping the publish"
+          else
+            echo "already=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to npm
         # OIDC via npm Trusted Publishing (configured per-package on
         # npmjs.com). No stored token; provenance is attested automatically.
+        if: steps.npm_state.outputs.already == 'false'
         run: npm publish --access public --provenance --tag "${{ steps.npm_tag.outputs.tag }}"
 
       - name: Wait for npm propagation
+        if: steps.npm_state.outputs.already == 'false'
         run: |
           for i in 1 2 3 4 5 6; do
-            if npm view "remark-dgmo@${GITHUB_REF_NAME#v}" version >/dev/null 2>&1; then
-              echo "✓ npm shows ${GITHUB_REF_NAME#v}"
+            if npm view "remark-dgmo@${{ steps.target.outputs.version }}" version >/dev/null 2>&1; then
+              echo "✓ npm shows ${{ steps.target.outputs.version }}"
               exit 0
             fi
             echo "Waiting for npm registry... ($i/6)"
@@ -98,5 +149,6 @@ jobs:
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ steps.target.outputs.tag }}
           generate_release_notes: true
           prerelease: ${{ steps.npm_tag.outputs.prerelease == 'true' }}
