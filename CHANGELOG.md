@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.14.4
+
+**Verified against `@diagrammo/dgmo` 0.71.0, and the first release of this
+package published by GitHub Actions.**
+
+Nothing in the tarball changes: dgmo is `external` here, so the built output is
+the same bytes at a new version number. What moved is what the suite runs
+against. The dev floor had been left at `>=0.66.0`, and a range that is already
+satisfied is never re-resolved — so every test and every wrapper build had gone
+on resolving dgmo **0.66.0** through five of its releases. The peer range is
+deliberately untouched at `>=0.61.0 <1`, because no new subpath import was
+added and that floor is set by imports rather than by recency.
+
+The publish now authenticates over npm trusted publishing, so this tarball
+carries a provenance attestation that 0.14.3 does not.
+
 ## 0.14.2
 
 🔴 **`import 'remark-dgmo/client-render.js'` was being deleted from builds, and
