@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.14.5
+
+**Verified against `@diagrammo/dgmo` 0.72.0.**
+
+Nothing in the tarball changes: dgmo is `external` here, so the built output is
+the same bytes at a new version number. What moved is what the suite runs
+against — the dev floor goes to `>=0.72.0`, because a range that is already
+satisfied is never re-resolved and the tests would otherwise have gone on
+resolving 0.71.0. The peer range stays at `>=0.61.0 <1`: no new subpath import
+was added, and that floor is set by imports rather than by recency.
+
 ## 0.14.4
 
 **Verified against `@diagrammo/dgmo` 0.71.0, and the first release of this
