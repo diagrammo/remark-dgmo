@@ -14,7 +14,9 @@ API -200 OK-> Client
 
 Drop a fenced block with the language `dgmo` into any markdown or MDX file processed by a unified-style pipeline — Astro, Docusaurus, Starlight, Vitepress, eleventy-with-remark, or your own custom toolchain — and it becomes an inline `<svg>` at build time.
 
-By default, every diagram is rendered **twice** (once with the palette's light mode, once with its dark mode) and wrapped in `<div class="dgmo-light">` / `<div class="dgmo-dark">`. A tiny shipped stylesheet hides the wrong one based on `[data-theme="dark"]` (the convention used by Docusaurus, Starlight, and most other docs frameworks). The result: your diagrams follow the host page's color-mode toggle without any client-side rendering.
+By default, every diagram is rendered **twice** (once with the palette's light mode, once with its dark mode) and wrapped in `<div class="dgmo-light">` / `<div class="dgmo-dark">`. A tiny shipped stylesheet hides the wrong one, keyed on `[data-theme="dark"]` (Docusaurus, Starlight) and on `html.dark` (Tailwind, next-themes, VitePress) — so both conventions work as shipped. The result: your diagrams follow the host page's color-mode toggle without any client-side rendering.
+
+The dark wrapper also carries the `hidden` attribute, so a page that never loads the stylesheet shows the light diagram rather than both of them. `hidden` is user-agent origin, so every rule in `client.css` still overrides it.
 
 ## Install
 
@@ -48,7 +50,7 @@ export default defineConfig({
 });
 ```
 
-You'll also need to import the color-mode stylesheet in your global layout:
+`astro-dgmo` injects the color-mode stylesheet itself from 0.11.0, so there is nothing else to wire. Wiring the remark plugin by hand instead? Import it yourself:
 
 ```astro
 ---
@@ -368,27 +370,29 @@ the `fumadocs-dgmo` repo has a Next.js app-router fixture at
 All three fixtures pin to `link:../..` against the wrapper plugin's
 source, so they're the canonical reference for the smallest correct
 config — including the non-obvious gotchas (Docusaurus's async-function
-default export + `markdown: { format: 'md' }`, Astro's manual `import
-'remark-dgmo/client.css'`, Fumadocs's `mdx: true` requirement and
-`html.dark` selector mapping).
+default export + `markdown: { format: 'md' }`, Fumadocs's `mdx: true`
+requirement and `html.dark` selector mapping). The Astro fixture
+deliberately imports no stylesheet, because `astro-dgmo` injects it.
 
 ## Custom color-mode selector
 
-The shipped `client.css` keys on `[data-theme="dark"]` — the convention used by Docusaurus and Starlight. For Tailwind-style sites that signal dark mode via a `.dark` class on `<html>` (which is also what Fumadocs UI's `next-themes` default produces), don't import `client.css` directly — `fumadocs-dgmo/client.css` ships a build-time rewrite for that case. For any other custom selector, inline these three rules in your own CSS instead, swapping the selector:
+The shipped `client.css` covers both mainstream conventions, so neither of these needs anything from you:
+
+- `data-theme="dark"` on `<html>` — Docusaurus, Starlight
+- `class="dark"` on `<html>` — Tailwind, next-themes, Fumadocs UI, VitePress
+
+For any other selector (`data-color-scheme="dark"`, `:root[data-mode="dark"]`), add this pair alongside the shipped stylesheet — they layer on top, so there is no need to opt out of it:
 
 ```css
-.dgmo-dark {
+[data-mode='dark'] .dgmo-light {
   display: none;
 }
-html.dark .dgmo-light {
-  display: none;
-}
-html.dark .dgmo-dark {
+[data-mode='dark'] .dgmo-dark {
   display: block;
 }
 ```
 
-For `data-color-scheme="dark"`, `:root[data-mode="dark"]`, etc. — same three rules, swap the selector to match what your toggle sets.
+If your site has no dark mode at all, there is nothing to do: the dark wrapper ships `hidden` and stays that way until one of these rules overrides it.
 
 ## How it works
 

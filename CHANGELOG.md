@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.15.0
+
+**Verified against `@diagrammo/dgmo` 0.76.0**, which is where the change
+actually comes from — `client.css` is a byte-for-byte copy of dgmo's
+`BLOCK_CSS`, guarded by a drift test.
+
+### Fixed
+
+- **Dark mode is keyed on `html.dark` as well as `[data-theme="dark"]`.**
+  Tailwind, next-themes, Fumadocs UI and VitePress all mark dark with a class;
+  Docusaurus and Starlight use the attribute. Shipping only the attribute left
+  the other half of the ecosystem with a diagram that never toggled unless the
+  host rewrote the selector at its own build step. Both now work as shipped;
+  the rewrite (`adaptClientCssToClassToggle`) stays for hosts on a third
+  signal.
+- **The dark wrapper carries `hidden`** (emitted by `@diagrammo/dgmo` 0.76.0),
+  so a page that never loads this stylesheet shows the light diagram rather
+  than both of them stacked. That was the failure reported from a live Astro
+  site: two of the five framework wrappers made the consumer import the
+  stylesheet by hand, and a site that did not know to renders every diagram
+  twice on a green build.
+
 ## 0.14.7
 
 **Verified against `@diagrammo/dgmo` 0.75.0.**
