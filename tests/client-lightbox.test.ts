@@ -88,7 +88,9 @@ describe('client lightbox behavior', () => {
     const clonedRect = host!.querySelector('rect') as Element;
     expect(clonedRect.getAttribute('id')).toMatch(/^dgmo-lb-\d+-r$/);
     // url(#grad) refs in fill + style rewritten to the namespaced id.
-    expect(clonedRect.getAttribute('fill')).toMatch(/^url\(#dgmo-lb-\d+-grad\)$/);
+    expect(clonedRect.getAttribute('fill')).toMatch(
+      /^url\(#dgmo-lb-\d+-grad\)$/
+    );
     expect(clonedRect.getAttribute('style')).toMatch(
       /url\(#dgmo-lb-\d+-grad\)/
     );

@@ -355,7 +355,9 @@ describe('when the author has stopped showing it', () => {
   });
 
   it('needs no renderer — the card is a sentence, not a drawing', async () => {
-    const load = vi.fn(renderer('<figure><svg viewBox="0 0 1 1"></svg></figure>'));
+    const load = vi.fn(
+      renderer('<figure><svg viewBox="0 0 1 1"></svg></figure>')
+    );
     const el = block({ 'data-dgmo-ref': ID });
 
     await refreshCloudReferences({

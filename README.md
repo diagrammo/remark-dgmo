@@ -345,7 +345,7 @@ left exactly as it was.
 ### When an author stops showing a diagram
 
 One answer is not a refresh at all. If the author has **withdrawn** the diagram,
-the page replaces it with the same *"This diagram is no longer shared."* card
+the page replaces it with the same _"This diagram is no longer shared."_ card
 your build draws — without the renderer, and without waiting for your next
 build. A site that builds weekly would otherwise keep publishing withdrawn work
 for a week, and one that has stopped building would keep publishing it forever.
@@ -353,8 +353,8 @@ for a week, and one that has stopped building would keep publishing it forever.
 It is the only case where this script takes something off your page rather than
 adding a note beside it, and it needs nothing from you. Every other answer — a
 missing diagram, an outage, a timeout, a request your CSP blocked — leaves the
-baked diagram exactly where it is, because those mean *cannot say* rather than
-*taken back*.
+baked diagram exactly where it is, because those mean _cannot say_ rather than
+_taken back_.
 
 ## Working reference site
 

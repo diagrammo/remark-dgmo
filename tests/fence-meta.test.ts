@@ -15,8 +15,12 @@ describe('parseFenceMeta', () => {
 
   it('parses background flags (bare + key=value)', () => {
     expect(parseFenceMeta('opaque')).toEqual({ background: 'opaque' });
-    expect(parseFenceMeta('transparent')).toEqual({ background: 'transparent' });
-    expect(parseFenceMeta('background=opaque')).toEqual({ background: 'opaque' });
+    expect(parseFenceMeta('transparent')).toEqual({
+      background: 'transparent',
+    });
+    expect(parseFenceMeta('background=opaque')).toEqual({
+      background: 'opaque',
+    });
     expect(parseFenceMeta('background=nope')).toEqual({});
   });
 

@@ -250,17 +250,17 @@ Disable `test:e2e` only when the host's static build is broken upstream. Documen
 `release.yml` runs on `workflow_dispatch` only, with an optional `tag` input — tag triggers are off so a release cannot run twice, and pushing a `v*` tag publishes nothing on its own. `scripts/release.sh <wrapper> X.Y.Z` tags, pushes, dispatches the workflow at that tag, watches it, and then checks npm actually serves the version (2026-08-14):
 
 ```yaml
-- Resolve the tag being released      # from the `tag` input or GITHUB_REF_NAME, shape-validated;
-                                      # every later step reads it, so a run started the wrong way
-                                      # fails here instead of publishing a version named `main`
+- Resolve the tag being released # from the `tag` input or GITHUB_REF_NAME, shape-validated;
+  # every later step reads it, so a run started the wrong way
+  # fails here instead of publishing a version named `main`
 - Checkout at that tag
 - Verify tag version matches package.json
 - Guard against dev-loop leakage:
     grep for `file:`/`link:` deps on remark-dgmo → fail
     grep for `pnpm.overrides` key in package.json → fail
 - Is this version already on npm? → skip the publish
-                                      # so a re-run does not die on npm's "cannot publish over the
-                                      # previously published versions", which reads like an auth error
+  # so a re-run does not die on npm's "cannot publish over the
+  # previously published versions", which reads like an auth error
 - pnpm install / typecheck / test / build
 - npm publish --access public --provenance # npm Trusted Publishing (OIDC), permissions: id-token: write
 - Wait for npm registry to surface the new version (6× retry, 10s sleep)

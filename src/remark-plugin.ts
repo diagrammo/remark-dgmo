@@ -4,10 +4,7 @@ import { errorBlockHtml } from '@diagrammo/dgmo/block';
 import type { CloudReference } from '@diagrammo/dgmo/cloud-reference';
 import type { BlockLocation } from './render-block.js';
 import { resolveOptions, type DgmoOptions } from './options.js';
-import {
-  ReferenceBuildError,
-  resolveReferences,
-} from './reference-resolve.js';
+import { ReferenceBuildError, resolveReferences } from './reference-resolve.js';
 import {
   classifyFence,
   locatedError,
@@ -55,7 +52,12 @@ export default function remarkDgmo(options: RemarkDgmoOptions = {}) {
       if (file?.path) loc.path = file.path;
       const line = node.position?.start.line;
       if (typeof line === 'number') loc.line = line;
-      const payload = classifyFence(node.value, node.meta ?? null, loc, options);
+      const payload = classifyFence(
+        node.value,
+        node.meta ?? null,
+        loc,
+        options
+      );
       targets.push({ parent: parent as Parent, index, payload });
     });
     if (targets.length === 0) return;

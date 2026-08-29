@@ -103,18 +103,19 @@ describe('adaptClientCssToClassToggle (shared dark-selector rewrite)', () => {
   });
 
   it('honors a custom toggle selector', async () => {
-    const { adaptClientCssToClassToggle } = await import(
-      '../src/client-css.js'
-    );
+    const { adaptClientCssToClassToggle } =
+      await import('../src/client-css.js');
     expect(
-      adaptClientCssToClassToggle('[data-theme="dark"] .x { a: b }', 'body.dark')
+      adaptClientCssToClassToggle(
+        '[data-theme="dark"] .x { a: b }',
+        'body.dark'
+      )
     ).toBe('body.dark .x { a: b }');
   });
 
   it('rewrites the real shipped client.css cleanly (no residual data-theme)', async () => {
-    const { adaptClientCssToClassToggle } = await import(
-      '../src/client-css.js'
-    );
+    const { adaptClientCssToClassToggle } =
+      await import('../src/client-css.js');
     const css = readFileSync(
       resolve(__dirname, '../styles/client.css'),
       'utf8'
