@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.15.2
+
+**Verified against `@diagrammo/dgmo` 0.79.0.** The dev range moves to
+`>=0.79.0 <1`, and that move is the release: a range this package already
+satisfied is never re-resolved, so 0.15.1 was built and tested against 0.77.0
+and never saw 0.78.0 at all.
+
+### Fixed
+
+- **The error card's docs link is bold again.** `styles/client.css` is a
+  byte-for-byte copy of the library's canonical block stylesheet, and it had
+  drifted by one declaration — dgmo made the link `bold` rather than weight 600
+  as part of a sweep that gave forty-eight chart types one visual language, and
+  this copy stayed on the old weight. Nothing here had changed; the stale
+  dependency range is what kept the copy stale. The drift guard is what caught
+  it, on the first build after the range moved.
+
+### Changed
+
+- Formatting only across eight files that had drifted from Prettier, and
+  `format:check` now runs as part of `check:all` so the next drift fails a push
+  instead of accumulating.
+
 ## 0.15.0
 
 **Verified against `@diagrammo/dgmo` 0.76.0**, which is where the change
