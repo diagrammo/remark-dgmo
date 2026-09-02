@@ -65,6 +65,33 @@ describe('client.css (AC-CM2 — required rules)', () => {
     });
   });
 
+  // Issue 647. The dark wrapper ships behind an inline `display: none` so a
+  // host that never loaded this stylesheet shows the light diagram rather than
+  // both — and an inline declaration outranks every NORMAL author rule, so
+  // only an important one can reveal it. The wrapper wore the `hidden`
+  // attribute until this issue: Tailwind v4 hides [hidden] with !important
+  // from inside a cascade layer, and a layered important declaration outranks
+  // an unlayered one at any specificity, so no rule here could reveal the dark
+  // wrapper and every diagram on a Tailwind v4 host was a zero-height empty
+  // box in dark mode. Measured on diagrammo.app/compare/, 2026-09-02.
+  it('marks both dark-show rules !important, outranking Tailwind preflight', () => {
+    const root = postcss.parse(css);
+    const seen: string[] = [];
+    root.walkRules(/\.dgmo-dark$/, (rule) => {
+      rule.walkDecls('display', (decl) => {
+        if (decl.value !== 'block') return;
+        seen.push(rule.selector);
+        expect(decl.important, `${rule.selector} must be !important`).toBe(
+          true
+        );
+      });
+    });
+    expect(seen).toEqual([
+      '[data-theme="dark"] .dgmo-dark',
+      'html.dark .dgmo-dark',
+    ]);
+  });
+
   // Sizing — without this, diagrams render at UA default 300x150 size.
   it('contains an SVG sizing rule for the dgmo wrappers', () => {
     const rules = collectRules();

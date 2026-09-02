@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.15.4
+
+**Every diagram on a Tailwind v4 host was blank in dark mode.** A dual-render
+fence ships a light SVG and a dark one and lets `client.css` pick; the dark
+wrapper carried the `hidden` attribute so a host that never imported the
+stylesheet showed one diagram rather than two. Tailwind v4's preflight hides
+`[hidden]` with `!important` from inside `@layer base`, and for important
+declarations a layered rule outranks an unlayered one at any specificity — so
+the reveal could not win at any strength. The light wrapper was hidden by
+`client.css`, the dark one by Tailwind, and the block collapsed to a
+zero-height empty box.
+
+`@diagrammo/dgmo` 0.82.0 hides the dark wrapper with an inline `display: none`
+instead, and the two reveal rules here are now `!important` so they beat it.
+**If you wrote your own color-mode selector**, add `!important` to your
+`display: block` rule — an inline declaration outranks every normal author
+rule. The README's recipe is updated.
+
+The no-stylesheet floor is unchanged. One host is worse off than before: a site
+whose Content-Security-Policy forbids inline styles drops the attribute, and
+its floor goes back to both diagrams. A page that imported the stylesheet is
+unaffected either way.
+
 ## 0.15.3
 
 **Verified against `@diagrammo/dgmo` 0.81.0.** The dev range moves to
