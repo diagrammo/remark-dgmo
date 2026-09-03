@@ -53,6 +53,12 @@ export type {
   ReferenceCacheFs,
   ReferenceOutcome,
 } from './reference-resolve.js';
+export {
+  type DegradedKind,
+  degradedSummaryLine,
+  noteDegradedLiveLink,
+  resetDegradedSummary,
+} from './degraded-summary.js';
 export { TOMBSTONE_TEXT, tombstoneCardHtml } from './tombstone-card.js';
 export {
   LIVE_LINK_AFFORDANCE_TEXT,

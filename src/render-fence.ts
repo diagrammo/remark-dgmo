@@ -13,6 +13,7 @@ import {
   resolveReferences,
   type ReferenceOutcome,
 } from './reference-resolve.js';
+import { noteDegradedLiveLink } from './degraded-summary.js';
 import { tombstoneCardHtml } from './tombstone-card.js';
 import { liveLinkOffWarning, wrapLiveLinkOff } from './live-link-off.js';
 
@@ -111,6 +112,7 @@ export async function renderClassifiedFence(
 
   if (outcome.kind === 'tombstone') {
     warn(outcome.warning, location);
+    noteDegradedLiveLink('placeholder', reference.id);
     const resolved = resolveOptions(options);
     return {
       html: tombstoneCardHtml({
@@ -122,7 +124,13 @@ export async function renderClassifiedFence(
     };
   }
 
-  if (outcome.warning) warn(outcome.warning, location);
+  if (outcome.warning) {
+    warn(outcome.warning, location);
+    // Only when there IS a warning. A live link that resolved cleanly also
+    // arrives here with `fromCache: false` and nothing to report — the tally
+    // counts what somebody would want to go and look at, not every reference.
+    noteDegradedLiveLink('stale', reference.id);
+  }
 
   // The markers the client refresh reads back: the id, the revision this page
   // was baked from, and the renderer version that baked it. Nothing else — no
