@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.15.5
+
+**A live link showing a placeholder instead of its diagram is now said again at
+the END of the build.** Every degraded live link already printed a warning
+naming the diagram, the cause, the remedy and the file and line — that has been
+true since the module was written. What it could not do is survive scrollback:
+measured on a real site, the detailed warning landed at line 105 of 228 lines
+of build output, so a blog post argued for live links over a placeholder card
+for three weeks and nobody noticed.
+
+The build now finishes with a one-line summary:
+
+```
+[remark-dgmo] This build finished with 1 live link showing a placeholder
+instead of its diagram (dgm_01KYRF…). Each one is described in full further
+up this log.
+```
+
+This is a prominence change, not a reporting one — no new warning was added and
+nothing that was silent before is louder now.
+
 ## 0.15.4
 
 **Every diagram on a Tailwind v4 host was blank in dark mode.** A dual-render
