@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.15.7
+
+**Verified against `@diagrammo/dgmo` 0.84.0.** In this
+package's manifest the `@diagrammo/dgmo` range moves to `>=0.84.0 <1`. That
+move is the release: an open range npm has already satisfied is never
+re-resolved, so the previous version was built and tested against
+whatever it happened to have installed rather than against what this workspace
+publishes.
+
+What 0.84.0 brings to a rendered page: the published build no longer points
+every file at a source map that was never shipped, so a site building with Vite
+stops printing an error per chunk into the browser console — 281 dangling
+references, on every release with the current manifest rather than a new fault.
+A `boxes-and-lines` diagram whose layout search runs out of options now names
+itself rather than escaping as the layout engine's own geometry error, closing
+the last two routes 0.83.0 narrowed but left open. And an embedded diagram's
+edit link carries a marker so a publisher can tell when somebody followed it;
+an ordinary share URL is unchanged.
+
 ## 0.15.6
 
 **Verified against `@diagrammo/dgmo` 0.83.0.** In this
