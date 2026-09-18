@@ -201,7 +201,6 @@ describe('when the reference cannot be resolved', () => {
       source: 'piechart Secret Restructuring Plan\n  A 1',
       dgmoVersion: '0.56.0',
       updatedAt: 1,
-      fetchedAt: 1,
     });
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     const t = tree(`live-link ${ID}`);
@@ -270,7 +269,6 @@ describe('when the reference cannot be resolved', () => {
             source: SOURCE,
             dgmoVersion: '0.56.0',
             updatedAt: 7,
-            fetchedAt: 7,
           }),
         }),
       }),

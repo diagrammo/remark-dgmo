@@ -67,15 +67,24 @@ import {
 
 import type { BlockLocation } from './render-block.js';
 
-/** What a resolved reference is, on disk and in hand. */
+/**
+ * What a resolved reference is, on disk and in hand.
+ *
+ * 🔴 **Every field here is a property of the served revision, and nothing
+ * records when we fetched it.** A `fetchedAt` stamp lived here until #841: it
+ * was written on every 200, read back by `parseCache` and then consulted by
+ * nothing, so a build re-fetching an unchanged diagram rewrote the committed
+ * file with a new number and left the repo dirty with no edit behind it. The
+ * cache is committed and reviewed in a diff, so a field that is guaranteed to
+ * differ on every build and cannot change a decision is worse than absent.
+ * Structurally identical to dgmo's `CloudReferenceSource` on purpose.
+ */
 export interface CachedReference {
   id: string;
   source: string;
   dgmoVersion: string;
   /** When the served revision was committed, per the Cloud. */
   updatedAt: number;
-  /** When WE last fetched it. Cache bookkeeping, never shown to a reader. */
-  fetchedAt: number;
 }
 
 /**
@@ -131,8 +140,6 @@ export interface ReferenceOptions {
   fetchImpl?: typeof fetch;
   /** Injected for tests; defaults to `node:fs/promises`. */
   fs?: ReferenceCacheFs;
-  /** Injected for tests; defaults to `Date.now`. */
-  now?: () => number;
 }
 
 export interface ResolvedReferenceOptions {
@@ -145,7 +152,6 @@ export interface ResolvedReferenceOptions {
   timeoutMs: number;
   fetchImpl: typeof fetch;
   fs: ReferenceCacheFs;
-  now: () => number;
 }
 
 export const DEFAULT_CACHE_DIR = '.dgmo/references';
@@ -204,7 +210,6 @@ export function resolveReferenceOptions(
         ? globalThis.fetch.bind(globalThis)
         : globalThis.fetch),
     fs: opts.fs ?? nodeCacheFs(),
-    now: opts.now ?? (() => Date.now()),
   };
 }
 
@@ -280,7 +285,6 @@ export function serializeCache(entry: CachedReference): string {
       source: entry.source,
       dgmoVersion: entry.dgmoVersion,
       updatedAt: entry.updatedAt,
-      fetchedAt: entry.fetchedAt,
     },
     null,
     2
@@ -300,7 +304,6 @@ function parseCache(raw: string | null): CachedReference | null {
       dgmoVersion:
         typeof parsed.dgmoVersion === 'string' ? parsed.dgmoVersion : '',
       updatedAt: typeof parsed.updatedAt === 'number' ? parsed.updatedAt : 0,
-      fetchedAt: typeof parsed.fetchedAt === 'number' ? parsed.fetchedAt : 0,
     };
   } catch {
     // A corrupt cache file is not a build failure: it is treated as absent, so
@@ -342,12 +345,13 @@ export async function resolveReference(
   });
 
   if (result.kind === 'ok') {
-    // `fetchedAt` is stamped HERE, not by the fetch: it is cache bookkeeping,
-    // and a surface with no cache has no use for it.
-    await opts.fs.write(
-      path,
-      serializeCache({ ...result.entry, fetchedAt: opts.now() })
-    );
+    // 🔴 Written straight through, with nothing of OURS added to it. The entry
+    // is the served revision and every byte of it comes from the response, so
+    // re-fetching an unchanged revision serializes byte-identically and the
+    // committed file stays clean. A write-time stamp here is what made every
+    // build dirty the repo (#841); if a future field is ever tempting, ask
+    // first whether a reader of the diff would learn anything from it changing.
+    await opts.fs.write(path, serializeCache(result.entry));
     return {
       kind: 'source',
       source: result.entry.source,

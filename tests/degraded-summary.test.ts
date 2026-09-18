@@ -132,7 +132,6 @@ describe('what the plugin records', () => {
     source: 'piechart Old\n  A 1',
     dgmoVersion: '0.56.0',
     updatedAt: 1,
-    fetchedAt: 1,
   });
 
   it('records a withdrawn diagram as a placeholder', async () => {

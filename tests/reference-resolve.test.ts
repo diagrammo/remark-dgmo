@@ -20,7 +20,6 @@ import {
 
 const ID = 'dgm_01HQ3';
 const REF = { id: ID };
-const NOW = 1_800_000_000_000;
 
 /** An in-memory cache directory. */
 function memFs(seed: Record<string, string> = {}) {
@@ -41,7 +40,6 @@ const cached = (over: Partial<Record<string, unknown>> = {}) =>
     source: 'flowchart\n  Cached -> Copy',
     dgmoVersion: '0.56.0',
     updatedAt: 111,
-    fetchedAt: 222,
     ...over,
   } as never);
 
@@ -60,7 +58,6 @@ function opts(
     enabled: true,
     fetchImpl,
     fs,
-    now: () => NOW,
     ...over,
   });
 }
@@ -349,5 +346,78 @@ describe('the batch', () => {
 
     expect(out.get('dgm_bad')).toBeInstanceOf(ReferenceBuildError);
     expect(out.get('dgm_good')).toMatchObject({ kind: 'source' });
+  });
+});
+
+/**
+ * #841 — the committed cache must not churn.
+ *
+ * `.dgmo/references/*.json` is committed and reviewed in a diff, so the only
+ * thing that may move it is the served revision moving. A `fetchedAt` stamped
+ * at write time made every build rewrite the file with a number nothing reads,
+ * which left consumer repos dirty with nobody having edited anything.
+ *
+ * 🔴 `Date.now` is stubbed to ADVANCE rather than to freeze, and that is the
+ * whole test: a frozen clock passes on the broken code too. Nothing injects a
+ * clock any more — the seam this used to need was removed with the field.
+ */
+describe('#841 — a re-fetch of an unchanged revision writes identical bytes', () => {
+  const REVISION = {
+    id: ID,
+    source: 'flowchart\n  Unchanged -> Revision',
+    dgmoVersion: '0.85.0',
+    updatedAt: 4242,
+  };
+
+  /** Every write, in order, rather than only the last one. */
+  function recordingFs() {
+    const writes: string[] = [];
+    const files = new Map<string, string>();
+    const fs: ReferenceCacheFs = {
+      read: (path) => Promise.resolve(files.get(path) ?? null),
+      write: (path, contents) => {
+        files.set(path, contents);
+        writes.push(contents);
+        return Promise.resolve();
+      },
+    };
+    return { fs, writes };
+  }
+
+  it('two builds a week apart serialize byte-identical payloads', async () => {
+    // A clock that moves between the two builds — a week, in the units the old
+    // stamp used. If anything write-time-dependent comes back, this separates
+    // the two payloads and the assertion below fails.
+    let clock = 1_789_065_795_531;
+    const dateNow = vi
+      .spyOn(Date, 'now')
+      .mockImplementation(() => (clock += 604_800_000));
+
+    try {
+      const fetchImpl = vi.fn(() =>
+        Promise.resolve(json(REVISION))
+      ) as unknown as typeof fetch;
+
+      const { fs, writes } = recordingFs();
+      await resolveReference(REF, opts(fetchImpl, fs));
+      await resolveReference(REF, opts(fetchImpl, fs));
+
+      expect(writes).toHaveLength(2);
+      expect(writes[1]).toBe(writes[0]);
+    } finally {
+      dateNow.mockRestore();
+    }
+  });
+
+  it('serializeCache writes no fetchedAt key at all', () => {
+    const payload = serializeCache(REVISION);
+
+    expect(payload).not.toContain('fetchedAt');
+    expect(Object.keys(JSON.parse(payload) as object)).toEqual([
+      'id',
+      'source',
+      'dgmoVersion',
+      'updatedAt',
+    ]);
   });
 });

@@ -145,7 +145,6 @@ describe('renderDgmoFence', () => {
             source: SOURCE,
             dgmoVersion: '0.56.0',
             updatedAt: 4242,
-            fetchedAt: 1000,
           }),
         }),
       }),
