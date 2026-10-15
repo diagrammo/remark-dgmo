@@ -64,6 +64,8 @@ describe('palette precedence: fence › file › plugin option', () => {
       m![1].replace(/&quot;/g, '"').replace(/&amp;/g, '&')
     );
     expect(opts.paletteOverride).toBe('catppuccin');
-    expect(opts.palette).toBe('slate');
+    // `palette` carries the fence value too, for a dgmo older than
+    // `paletteOverride` (below 0.91.0, still inside the peer range).
+    expect(opts.palette).toBe('catppuccin');
   });
 });
