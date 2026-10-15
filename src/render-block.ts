@@ -51,7 +51,6 @@ export async function renderDgmoBlock(
   const opts: ResolvedOptions = {
     ...base,
     mode: effectiveMode,
-    palette: block.palette ?? base.palette,
     theme: block.theme ?? base.theme,
     colorMode: block.colorMode ?? base.colorMode,
     background: block.background ?? base.background,
@@ -62,9 +61,15 @@ export async function renderDgmoBlock(
       block.showOpenInEditor ?? (block.mode ? showcase : base.showOpenInEditor),
   };
 
+  // Two palettes, never merged: the plugin's `palette` is the surface default,
+  // which a diagram's own `palette` line beats; a fence `palette=` is a
+  // deliberate per-embed choice, so it goes as `paletteOverride` and beats the
+  // file. Order: fence › file › plugin option › Slate (#1038).
+  const paletteOverride = block.palette;
   const blockOptions: DgmoBlockOptions = {
     mode: opts.mode,
     palette: opts.palette,
+    ...(paletteOverride !== undefined && { paletteOverride }),
     colorMode: opts.colorMode,
     background: opts.background,
     showSource: opts.showSource,
@@ -115,6 +120,7 @@ export async function renderDgmoBlock(
             'dgmo-ref-opts': JSON.stringify({
               mode: opts.mode,
               palette: opts.palette,
+              ...(paletteOverride !== undefined && { paletteOverride }),
               colorMode: opts.colorMode,
               background: opts.background,
               showSource: opts.showSource,

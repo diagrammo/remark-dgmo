@@ -177,7 +177,8 @@ remarkDgmo({
   // 'showcase' = syntax-highlighted source + diagram + copy + open-in-editor.
   mode: 'diagram',
 
-  // Default palette name (any registered @diagrammo/dgmo palette).
+  // Default palette name (any registered @diagrammo/dgmo palette). A diagram's
+  // own `palette` line beats it; a fence `palette=` beats both.
   palette: 'nord',
 
   // Color-mode strategy. 'auto' (default) renders both light and dark and
@@ -229,7 +230,7 @@ A -> B
 | Token                                                   | Effect                              |
 | ------------------------------------------------------- | ----------------------------------- |
 | `diagram` / `showcase`                                  | Set `mode` for this block           |
-| `palette=<name>`                                        | Override palette                    |
+| `palette=<name>`                                        | Override palette, beats the file's  |
 | `theme=light` / `theme=dark` / `theme=transparent`      | Override theme (single-render only) |
 | `colorMode=auto` / `colorMode=light` / `colorMode=dark` | Override color-mode strategy        |
 | `title="…"`                                             | Add a caption (`<figcaption>`)      |
