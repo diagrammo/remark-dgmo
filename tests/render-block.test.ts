@@ -112,6 +112,14 @@ describe('renderDgmoBlock (single-render path, colorMode: light)', () => {
     expect(html).toContain('dgmo-toolbar');
   });
 
+  it('sourceOpen renders the source panel already open', async () => {
+    const { html } = await renderDgmoBlock(SAMPLE, 'sourceOpen', {
+      colorMode: 'light',
+    });
+    expect(html).toContain('<details class="dgmo-source-wrap" open>');
+    expect(html).toContain('dgmo-pre');
+  });
+
   it('uses custom editorBaseUrl', async () => {
     const { html } = await renderDgmoBlock(SAMPLE, 'showcase', {
       colorMode: 'light',

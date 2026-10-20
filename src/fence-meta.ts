@@ -6,7 +6,7 @@ import type { Mode, Theme } from './options.js';
  *     ```dgmo showcase palette=catppuccin theme=light title="Login flow"
  *
  * Tokens are space-separated. Boolean tokens are bare words (`showcase`,
- * `diagram`, `noSource`). Key=value pairs use `=`; values may be quoted with
+ * `diagram`, `noSource`, `sourceOpen`). Key=value pairs use `=`; values may be quoted with
  * double quotes to include spaces.
  */
 export interface BlockOptions {
@@ -16,6 +16,8 @@ export interface BlockOptions {
   colorMode?: 'auto' | 'light' | 'dark';
   background?: 'auto' | 'transparent' | 'opaque';
   showSource?: boolean;
+  /** Start with the source panel open (implies showSource). */
+  sourceOpen?: boolean;
   showCopy?: boolean;
   showExpand?: boolean;
   showOpenInEditor?: boolean;
@@ -29,6 +31,7 @@ const BARE_FLAGS: Record<string, Partial<BlockOptions>> = {
   opaque: { background: 'opaque' },
   noSource: { showSource: false },
   source: { showSource: true },
+  sourceOpen: { showSource: true, sourceOpen: true },
   noCopy: { showCopy: false },
   copy: { showCopy: true },
   noExpand: { showExpand: false },

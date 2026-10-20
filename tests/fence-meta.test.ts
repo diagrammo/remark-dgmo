@@ -68,6 +68,10 @@ describe('parseFenceMeta', () => {
       showExpand: false,
     });
     expect(parseFenceMeta('expand')).toEqual({ showExpand: true });
+    expect(parseFenceMeta('sourceOpen')).toEqual({
+      showSource: true,
+      sourceOpen: true,
+    });
     expect(parseFenceMeta('showExpand=false')).toEqual({ showExpand: false });
     expect(
       parseFenceMeta('showcase noSource noCopy noExpand noOpenInEditor')
