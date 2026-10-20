@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.17.0
+
+**Verified against `@diagrammo/dgmo` 0.92.0**, which is now the floor.
+
+- **`sourceOpen` starts a diagram with its source panel expanded.** It
+  implies `source`.
+- **A fence `palette=` now beats the diagram's own `palette` line**, as the
+  spec orders it: fence, then file, then plugin option. A referenced block
+  keeps that order when the client refreshes it.
+- **A committed reference cache no longer changes on every build.** The
+  `fetchedAt` stamp is gone from `.dgmo/references/<id>.json`.
+
 ## 0.15.7
 
 **Verified against `@diagrammo/dgmo` 0.84.0.** In this
