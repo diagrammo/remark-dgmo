@@ -41,6 +41,7 @@ import { refreshCloudReferences } from './reference-refresh.js';
 
 let clickHandlerBound = false;
 let themeObserverBound = false;
+let redrawListenerBound = false;
 
 function isInteractiveBrowser(): boolean {
   return (
@@ -120,6 +121,16 @@ export function bindDgmo(): void {
   // the page it runs on — and returns immediately on a page with no references,
   // which is every page on the wrappers that are not piloting this.
   void refreshCloudReferences();
+
+  // A countdown whose baked calendar band went stale is drawn again in place by
+  // dgmo's ticker, with the build's string-measured viewBox. Re-tighten it the
+  // way every other diagram on the page was tightened at load.
+  if (!redrawListenerBound) {
+    document.addEventListener('dgmo:countdown-redrawn', () => {
+      requestAnimationFrame(tightenViewBoxes);
+    });
+    redrawListenerBound = true;
+  }
 
   if (!themeObserverBound) {
     const html = document.documentElement;

@@ -160,6 +160,21 @@ describe('client DOM behavior', () => {
     expect(svg.getAttribute('viewBox')).toBe('-6 4 132 82');
   });
 
+  it('re-tightens the viewBox after dgmo redraws a stale countdown', () => {
+    document.body.innerHTML = `
+      <div class="dgmo-svg"><svg viewBox="0 0 1200 800"></svg></div>`;
+    const svg = document.querySelector('svg') as SVGSVGElement;
+    bindDgmo();
+    // The redraw puts the drawing's own, looser viewBox back.
+    svg.setAttribute('viewBox', '0 0 1200 800');
+    (svg as unknown as { getBBox: () => DOMRect }).getBBox = () =>
+      ({ x: 10, y: 20, width: 100, height: 50 }) as DOMRect;
+    svg.dispatchEvent(
+      new CustomEvent('dgmo:countdown-redrawn', { bubbles: true })
+    );
+    expect(svg.getAttribute('viewBox')).toBe('-6 4 132 82');
+  });
+
   it('leaves the viewBox alone when getBBox reports empty bounds', () => {
     document.body.innerHTML = `
       <div class="dgmo-svg"><svg viewBox="0 0 1200 800"></svg></div>`;
