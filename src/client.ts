@@ -93,6 +93,7 @@ export function bindDgmo(): void {
     );
     clickHandlerBound = true;
   }
+  pinAuthoredSourcePanels();
   tightenViewBoxes();
 
   // Seed the dynamic chart types (countdown, clock) and register their 1s
@@ -140,9 +141,23 @@ export function bindDgmo(): void {
  * no-op. Belt-and-suspenders with `:hover` + `activeElement` so a mouse-out
  * that still leaves focus inside (or vice-versa) keeps the panel open.
  */
+/**
+ * Mark every source panel already open at bind time as authored open — the
+ * `sourceOpen` fence token renders `<details open>`, and the reader never
+ * opened it, so the idle collapse below must leave it alone. A panel the
+ * reader opens later carries no mark and still collapses.
+ */
+function pinAuthoredSourcePanels(): void {
+  document
+    .querySelectorAll<HTMLDetailsElement>('details.dgmo-source-wrap[open]')
+    .forEach((d) => {
+      d.dataset['dgmoSourceOpen'] = '';
+    });
+}
+
 function collapseIdleSourcePanels(movedTo: Node | null): void {
   const open = document.querySelectorAll<HTMLDetailsElement>(
-    'details.dgmo-source-wrap[open]'
+    'details.dgmo-source-wrap[open]:not([data-dgmo-source-open])'
   );
   open.forEach((d) => {
     const block = d.closest('.dgmo');

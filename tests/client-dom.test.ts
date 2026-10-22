@@ -69,7 +69,7 @@ describe('client DOM behavior', () => {
     document.body.innerHTML = `
       <div class="dgmo">
         <div class="dgmo-svg"><svg></svg></div>
-        <details class="dgmo-source-wrap" open><summary class="dgmo-toolbar"></summary><div class="dgmo-source-inner"></div></details>
+        <details class="dgmo-source-wrap"><summary class="dgmo-toolbar"></summary><div class="dgmo-source-inner"></div></details>
       </div>
       <div id="outside"></div>`;
     bindDgmo();
@@ -77,7 +77,7 @@ describe('client DOM behavior', () => {
     const details = document.querySelector(
       'details.dgmo-source-wrap'
     ) as HTMLDetailsElement;
-    expect(details.open).toBe(true);
+    details.open = true;
 
     const outside = document.getElementById('outside')!;
     details.dispatchEvent(
@@ -90,13 +90,14 @@ describe('client DOM behavior', () => {
     document.body.innerHTML = `
       <div class="dgmo">
         <div class="dgmo-svg"><svg></svg></div>
-        <details class="dgmo-source-wrap" open><summary class="dgmo-toolbar"></summary><div class="dgmo-source-inner"><span id="inner">x</span></div></details>
+        <details class="dgmo-source-wrap"><summary class="dgmo-toolbar"></summary><div class="dgmo-source-inner"><span id="inner">x</span></div></details>
       </div>`;
     bindDgmo();
 
     const details = document.querySelector(
       'details.dgmo-source-wrap'
     ) as HTMLDetailsElement;
+    details.open = true;
     const inner = document.getElementById('inner')!;
     // Pointer moves from the summary to a child still inside the block.
     details.dispatchEvent(
@@ -109,7 +110,7 @@ describe('client DOM behavior', () => {
     document.body.innerHTML = `
       <div class="dgmo">
         <div class="dgmo-svg"><svg></svg></div>
-        <details class="dgmo-source-wrap" open><summary class="dgmo-toolbar" tabindex="0"></summary><div class="dgmo-source-inner"></div></details>
+        <details class="dgmo-source-wrap"><summary class="dgmo-toolbar" tabindex="0"></summary><div class="dgmo-source-inner"></div></details>
       </div>
       <button id="elsewhere">x</button>`;
     bindDgmo();
@@ -117,11 +118,34 @@ describe('client DOM behavior', () => {
     const details = document.querySelector(
       'details.dgmo-source-wrap'
     ) as HTMLDetailsElement;
+    details.open = true;
     const elsewhere = document.getElementById('elsewhere')!;
     details.dispatchEvent(
       new FocusEvent('focusout', { bubbles: true, relatedTarget: elsewhere })
     );
     expect(details.open).toBe(false);
+  });
+
+  it('keeps a panel authored open (sourceOpen) open when the pointer and focus leave', () => {
+    document.body.innerHTML = `
+      <div class="dgmo">
+        <div class="dgmo-svg"><svg></svg></div>
+        <details class="dgmo-source-wrap" open><summary class="dgmo-toolbar"></summary><div class="dgmo-source-inner"></div></details>
+      </div>
+      <div id="outside"></div>`;
+    bindDgmo();
+
+    const details = document.querySelector(
+      'details.dgmo-source-wrap'
+    ) as HTMLDetailsElement;
+    const outside = document.getElementById('outside')!;
+    details.dispatchEvent(
+      new MouseEvent('mouseout', { bubbles: true, relatedTarget: outside })
+    );
+    details.dispatchEvent(
+      new FocusEvent('focusout', { bubbles: true, relatedTarget: outside })
+    );
+    expect(details.open).toBe(true);
   });
 
   it('tightens the svg viewBox to getBBox bounds with padding', () => {
