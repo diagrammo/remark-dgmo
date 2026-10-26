@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.17.1
+
+- **A source panel authored open (`sourceOpen`) stays open** when the
+  pointer passes over it. A panel the reader opens still collapses.
+- **A countdown redrawn by its ticker keeps a tight frame.** When dgmo
+  redraws a stale calendar band, the client re-tightens its viewBox as it
+  did at load.
+
 ## 0.17.0
 
 **Verified against `@diagrammo/dgmo` 0.92.0**, which is now the floor.
