@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.2
+
+- **Copy a diagram as an image.** The toolbar's picture button puts the
+  diagram, as currently shown, on the clipboard as a PNG. Needs
+  `@diagrammo/dgmo` 0.95.0 or later, which is now the peer floor.
+
 ## 0.17.1
 
 - **A source panel authored open (`sourceOpen`) stays open** when the
