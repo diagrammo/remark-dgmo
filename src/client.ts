@@ -4,7 +4,7 @@
  *
  *   - Bind a delegated click handler for the showcase toolbar buttons:
  *     `.dgmo-copy` copies the source string in `data-dgmo-source` to the
- *     clipboard. `.dgmo-open` is an `<a href>` whose default-action
+ *     clipboard; `.dgmo-copy-image` copies the visible diagram as a PNG. `.dgmo-open` is an `<a href>` whose default-action
  *     navigation is preserved — except when it lives inside a `<summary>`
  *     (the collapsible toolbar case), where we have to manually navigate
  *     because the same click's `preventDefault()` cancels both the
@@ -35,6 +35,11 @@ import { startCountdowns } from '@diagrammo/dgmo/countdown';
 // Same deal for the `clock` chart type — a sibling ~1 KB 1s ticker on its own
 // subpath. Updates the baked `data-dgmo-clock` analog/digital world-clock rows.
 import { startClocks } from '@diagrammo/dgmo/clock';
+// Copy-as-image — zero-import, shared with the auto script and Obsidian.
+import {
+  canCopyDiagramImage,
+  copyDiagramImage,
+} from '@diagrammo/dgmo/copy-image';
 // Cloud references (story 10.4). Small and static; the RENDERER it may need is
 // dynamically imported, and only once a diagram is known to have moved.
 import { refreshCloudReferences } from './reference-refresh.js';
@@ -54,6 +59,11 @@ function isInteractiveBrowser(): boolean {
 
 export function bindDgmo(): void {
   if (!isInteractiveBrowser()) return;
+
+  // No PNG clipboard (older Firefox) → a button that does nothing; drop it.
+  if (!canCopyDiagramImage()) {
+    document.querySelectorAll('.dgmo-copy-image').forEach((b) => b.remove());
+  }
 
   if (!clickHandlerBound) {
     // Capture phase, not bubble: the handler must run BEFORE any
@@ -202,6 +212,13 @@ async function handleToolbarBtnClick(e: Event): Promise<void> {
 
   if (btn.matches('button.dgmo-expand')) {
     openDgmoLightbox(btn);
+    return;
+  }
+
+  if (btn.matches('button.dgmo-copy-image')) {
+    if (!(await copyDiagramImage(btn))) return;
+    btn.classList.add('dgmo-copy--success');
+    setTimeout(() => btn.classList.remove('dgmo-copy--success'), 1500);
     return;
   }
 
