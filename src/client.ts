@@ -43,6 +43,9 @@ import {
 // Cloud references (story 10.4). Small and static; the RENDERER it may need is
 // dynamically imported, and only once a diagram is known to have moved.
 import { refreshCloudReferences } from './reference-refresh.js';
+// Fold in the page (#1741). Its renderer is a dynamic import reached on the
+// first toggle; see the module for what that costs an adopter's build.
+import { handleFoldEvent, markFoldToggles } from './fold.js';
 
 let clickHandlerBound = false;
 let themeObserverBound = false;
@@ -81,6 +84,13 @@ export function bindDgmo(): void {
       },
       true
     );
+    // Fold toggles inside a foldable block: click, and Enter/Space on a
+    // focused toggle. Bubble phase — a toggle is never inside a <summary>.
+    const onFold = (e: Event): void => {
+      void handleFoldEvent(e, tightenViewBoxes);
+    };
+    document.addEventListener('click', onFold);
+    document.addEventListener('keydown', onFold);
     // Auto-collapse an open source panel once the pointer AND focus have both
     // left the block — the expanded code shouldn't linger after you move on.
     // Delegated (the click handler is document-level too); `relatedTarget` is
@@ -105,6 +115,7 @@ export function bindDgmo(): void {
     clickHandlerBound = true;
   }
   pinAuthoredSourcePanels();
+  markFoldToggles();
   tightenViewBoxes();
 
   // Seed the dynamic chart types (countdown, clock) and register their 1s

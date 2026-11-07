@@ -188,3 +188,25 @@ poi Denver`;
     expect(html).toContain('Denver');
   });
 });
+
+describe('fold markers (#1741)', () => {
+  it('a block with no fold toggle carries no fold attributes', async () => {
+    const { html } = await renderDgmoBlock(SAMPLE, null, {
+      colorMode: 'light',
+    });
+    expect(html).not.toContain('data-dgmo-fold-');
+  });
+
+  it('a foldable reference block reuses its ref options', async () => {
+    const { html } = await renderDgmoBlock(
+      'mindmap M\n\nA\n  B collapsed\n    C',
+      null,
+      { colorMode: 'light' },
+      undefined,
+      { dataAttributes: { 'dgmo-ref': 'abc' } }
+    );
+    expect(html).toContain('data-dgmo-ref-opts=');
+    expect(html).not.toContain('data-dgmo-fold-opts=');
+    expect(html).toContain('data-dgmo-fold-source=');
+  });
+});

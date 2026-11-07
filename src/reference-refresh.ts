@@ -326,6 +326,9 @@ async function swapOrMark(
     }
     el.innerHTML = next.innerHTML;
     el.dataset['dgmoRefRefreshed'] = 'true';
+    // A foldable block folds from the source it shows, which is now this one.
+    if (el.dataset['dgmoFoldSource'] !== undefined)
+      el.dataset['dgmoFoldSource'] = source.trim();
   } catch {
     markUpdated(el, id, ctx);
   }

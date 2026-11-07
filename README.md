@@ -327,6 +327,10 @@ that can see the import ships it whether or not it is ever used. On this repo's
 own Astro fixture the difference is **1 chunk / 8.9 KB gzipped versus 88 chunks
 / 634 KB**. Lazy for your readers; not free for your `dist/`.
 
+Since folding in the page (below), `client.js` itself reaches the renderer
+lazily, so your `dist/` carries its chunks either way. The swap stays opt-in
+because it changes what a reader sees without the author rebuilding.
+
 If you want the swap anyway — a docs site that publishes far more often than it
 rebuilds is the case that wants it — opt in:
 
@@ -415,6 +419,7 @@ If your site has no dark mode at all, there is nothing to do: the dark wrapper s
 3. Each SVG is normalized: width/height stripped, `viewBox` added, inline background removed.
 4. The original `code` node is replaced with an `html` node carrying the rendered wrapper(s).
 5. The optional client script (`dist/client.js`) tightens viewBoxes and binds showcase-mode copy buttons.
+6. A diagram with fold toggles (mindmap, org, sitemap, groups, sections, notes) folds and unfolds in the page: the client script loads dgmo's renderer on the first click or Enter/Space on a toggle and draws that block again with the fold flipped. It is that reader's view only; nothing is saved. A page with no toggles never downloads the renderer, but a bundler emits its chunks into your build output, because the import is visible to it.
 
 Rendering happens at build time. The browser sees only the inline SVG and the small color-mode CSS.
 

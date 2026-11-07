@@ -109,44 +109,64 @@ export async function renderDgmoBlock(
     },
   };
   if (block.title !== undefined) blockOptions.title = block.title;
+
+  // The options this block was baked with, as the browser can replay them: a
+  // client re-render (a cloud-reference refresh, or a reader folding a node)
+  // must draw the diagram that is on the page, not revert to defaults. Written
+  // HERE because this is where per-block fence meta has already been folded
+  // into the integration's options — the effective values exist nowhere else,
+  // and reconstructing them in the caller would be a second copy of the merge
+  // above.
+  const bakeOptions = JSON.stringify({
+    mode: opts.mode,
+    palette,
+    ...(paletteOverride !== undefined && { paletteOverride }),
+    ...(block.highlight !== undefined && { highlight: block.highlight }),
+    colorMode: opts.colorMode,
+    background: opts.background,
+    showSource: opts.showSource,
+    ...(block.sourceOpen ? { sourceOpen: true } : {}),
+    showCopy: opts.showCopy,
+    showExpand: opts.showExpand,
+    showOpenInEditor: opts.showOpenInEditor,
+    editorBaseUrl: opts.editorBaseUrl,
+    className: opts.className,
+    legacyClassNames: opts.legacyClassNames,
+    wrapper: opts.wrapper,
+  });
+  const isReference = !!extra.dataAttributes?.['dgmo-ref'];
   if (extra.dataAttributes) {
     blockOptions.dataAttributes = {
       ...extra.dataAttributes,
-      // A cloud-referenced block also carries the options it was baked with, so
-      // a client refresh re-renders the diagram that is on the page rather than
-      // reverting to defaults. A diagram that silently changes palette when it
-      // refreshes reads as a bug, not as freshness.
-      //
-      // Written HERE because this is where per-block fence meta has already
-      // been folded into the integration's options — the effective values exist
-      // nowhere else, and reconstructing them in the caller would be a second
-      // copy of the merge above.
-      ...(extra.dataAttributes['dgmo-ref']
-        ? {
-            'dgmo-ref-opts': JSON.stringify({
-              mode: opts.mode,
-              palette,
-              ...(paletteOverride !== undefined && { paletteOverride }),
-              ...(block.highlight !== undefined && {
-                highlight: block.highlight,
-              }),
-              colorMode: opts.colorMode,
-              background: opts.background,
-              showSource: opts.showSource,
-              ...(block.sourceOpen ? { sourceOpen: true } : {}),
-              showCopy: opts.showCopy,
-              showExpand: opts.showExpand,
-              showOpenInEditor: opts.showOpenInEditor,
-              className: opts.className,
-              wrapper: opts.wrapper,
-            }),
-          }
-        : {}),
+      ...(isReference ? { 'dgmo-ref-opts': bakeOptions } : {}),
     };
   }
 
-  return renderStandardBlock(source, blockOptions);
+  const result = await renderStandardBlock(source, blockOptions);
+  if (!FOLD_TOGGLE.test(result.html)) return result;
+
+  // A diagram a reader can fold (#1741). The client re-renders it in the page
+  // on a toggle, so the block has to carry what that re-render needs: the
+  // options (already there on a reference) and the source. The copy button
+  // already holds the source when there is one; a second copy would double the
+  // largest attribute on the page for nothing. Rendered twice rather than
+  // patched, because a wrapper editing rendered markup by regex is how a
+  // rendering pipeline starts having two of them — and only a block that turns
+  // out to have a toggle pays.
+  return renderStandardBlock(source, {
+    ...blockOptions,
+    // The first render already said whatever there was to say.
+    onWarn: () => {},
+    dataAttributes: {
+      ...blockOptions.dataAttributes,
+      ...(isReference ? {} : { 'dgmo-fold-opts': bakeOptions }),
+      ...(opts.showCopy ? {} : { 'dgmo-fold-source': source.trim() }),
+    },
+  });
 }
+
+/** Any of the four fold toggles dgmo emits (#1741). */
+const FOLD_TOGGLE = /\sdata-(?:node|group|section|note)-toggle[\s=>]/;
 
 function locationSuffix(location: BlockLocation | undefined): string {
   if (!location) return '';
