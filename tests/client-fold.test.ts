@@ -1,11 +1,28 @@
 // @vitest-environment jsdom
 // Fold in the page (diagrammo/diagrammo#1741): a reader's click or Enter on a
 // fold toggle re-renders that block, in place, with the fold flipped. Driven
-// end to end — the block is the remark adapter's real build output and the
-// re-render is dgmo's real renderer, reached by the client's lazy import.
+// end to end — the block is the remark adapter's real build output with
+// `fold: true` and the re-render is dgmo's real renderer, reached by the
+// opt-in entry's lazy import.
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+vi.hoisted(() => {
+  // The fold entry checks for a browser when it is evaluated.
+  globalThis.requestAnimationFrame = (cb: FrameRequestCallback) => {
+    cb(0);
+    return 0;
+  };
+});
+
 import { bindDgmo } from '../src/client.js';
-import { renderDgmoBlock } from '../src/render-block.js';
+import '../src/client-fold.js';
+import { renderDgmoBlock as buildBlock } from '../src/render-block.js';
+
+const renderDgmoBlock = (
+  source: string,
+  meta: string | null,
+  options: Parameters<typeof buildBlock>[2]
+) => buildBlock(source, meta, { fold: true, ...options });
 
 // Line 4 (`Ship`) starts folded; its toggle reads aria-expanded="false".
 const MINDMAP = `mindmap Plan
@@ -36,15 +53,13 @@ async function mount(meta: string | null = null): Promise<void> {
   const { html } = await renderDgmoBlock(MINDMAP, meta, {});
   document.body.innerHTML = html;
   bindDgmo();
+  // The fold entry marks toggles from a MutationObserver.
+  await new Promise((r) => setTimeout(r, 0));
 }
 
 describe('fold in the page', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-      cb(0);
-      return 0;
-    });
   });
 
   it('the build marks a foldable block with its options and source', async () => {
@@ -115,6 +130,7 @@ describe('fold in the page', () => {
     });
     document.body.innerHTML = html;
     bindDgmo();
+    await new Promise((r) => setTimeout(r, 0));
     const before = block().querySelector('svg')!.outerHTML;
     const done = folded();
     (block().querySelector(`.dgmo-svg ${SHIP}`) as SVGElement).dispatchEvent(
@@ -137,5 +153,18 @@ describe('fold in the page', () => {
     );
     await done;
     expect(shipIn('dgmo-light').getAttribute('aria-expanded')).toBe('true');
+  });
+
+  it('a block redrawn by a reference refresh folds from its copy button, not the stale source', async () => {
+    await mount('showcase');
+    const el = block();
+    el.dataset['dgmoFoldSource'] = 'mindmap Stale\n\nOld\n  Gone';
+    el.dataset['dgmoRefRefreshed'] = 'true';
+    const done = folded();
+    shipIn('dgmo-light').dispatchEvent(
+      new MouseEvent('click', { bubbles: true })
+    );
+    await done;
+    expect(block().dataset['dgmoFoldSource']).toContain('Goals');
   });
 });

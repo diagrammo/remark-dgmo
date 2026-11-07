@@ -8,6 +8,9 @@ export default defineConfig({
     // Opt-in renderer for cloud references. Its own entry precisely so the
     // render graph is absent from `client.js` — see src/client-render.ts.
     'client-render': 'src/client-render.ts',
+    // Opt-in fold in the page (#1741), its own entry for the same reason: a
+    // site without folding must not ship the renderer's lazy chunks.
+    'client-fold': 'src/client-fold.ts',
     'client-css': 'src/client-css.ts',
   },
   format: ['esm'],

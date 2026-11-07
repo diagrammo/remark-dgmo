@@ -45,6 +45,7 @@
     },
     "./client.js": "./dist/client.js",
     "./client-render.js": "./dist/client-render.js",
+    "./client-fold.js": "./dist/client-fold.js",
     "./client.css": "./dist/client.css",
     "./theme-nord.css": "./dist/theme-nord.css",
     "./client-css": {
@@ -59,14 +60,15 @@
     "LICENSE"
   ],
   "sideEffects": [
-    "./dist/client-render.js"
+    "./dist/client-render.js",
+    "./dist/client-fold.js"
   ],
   "engines": {
     "node": ">=20.6"
   },
   "scripts": {
     "build": "tsup && cp styles/client.css dist/client.css && cp styles/theme-nord.css dist/theme-nord.css",
-    "postbuild": "test -f dist/client.css && test -f dist/client.js && test -f dist/theme-nord.css",
+    "postbuild": "test -f dist/client.css && test -f dist/client.js && test -f dist/client-fold.js && test -f dist/theme-nord.css",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --coverage",

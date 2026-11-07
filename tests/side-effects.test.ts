@@ -30,6 +30,10 @@ describe('package.json sideEffects', () => {
     expect(pkg.sideEffects).toContain('./dist/client-render.js');
   });
 
+  it('names client-fold.js, the opt-in fold entry (#1741), for the same reason', () => {
+    expect(pkg.sideEffects).toContain('./dist/client-fold.js');
+  });
+
   it('is not the blanket `false` that deleted the opt-in', () => {
     expect(pkg.sideEffects).not.toBe(false);
   });

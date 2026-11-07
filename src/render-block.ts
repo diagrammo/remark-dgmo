@@ -69,7 +69,13 @@ export async function renderDgmoBlock(
   // `paletteOverride`, and there the fence must keep beating the option.
   const paletteOverride = block.palette;
   const palette = paletteOverride ?? opts.palette;
-  const blockOptions: DgmoBlockOptions = {
+  // The options this block is baked with. A client re-render (a
+  // cloud-reference refresh, or a reader folding a node) replays them from the
+  // block's data attributes, so it draws the diagram that is on the page, not
+  // defaults. Built HERE because this is where per-block fence meta has already
+  // been folded into the integration's options — the effective values exist
+  // nowhere else.
+  const baked = {
     mode: opts.mode,
     palette,
     ...(paletteOverride !== undefined && { paletteOverride }),
@@ -86,6 +92,12 @@ export async function renderDgmoBlock(
     wrapper: opts.wrapper,
     className: opts.className,
     legacyClassNames: opts.legacyClassNames,
+    // Fold off: the toggles are drawn as plain marks, not buttons, because no
+    // client code will answer a click on them (#1741). A refresh replays it.
+    ...(!opts.fold && { interactiveFolds: false }),
+  } satisfies DgmoBlockOptions;
+  const blockOptions: DgmoBlockOptions = {
+    ...baked,
     onWarn: (message) => {
       console.warn(`[remark-dgmo] ${message}${locationSuffix(location)}`);
     },
@@ -110,30 +122,7 @@ export async function renderDgmoBlock(
   };
   if (block.title !== undefined) blockOptions.title = block.title;
 
-  // The options this block was baked with, as the browser can replay them: a
-  // client re-render (a cloud-reference refresh, or a reader folding a node)
-  // must draw the diagram that is on the page, not revert to defaults. Written
-  // HERE because this is where per-block fence meta has already been folded
-  // into the integration's options — the effective values exist nowhere else,
-  // and reconstructing them in the caller would be a second copy of the merge
-  // above.
-  const bakeOptions = JSON.stringify({
-    mode: opts.mode,
-    palette,
-    ...(paletteOverride !== undefined && { paletteOverride }),
-    ...(block.highlight !== undefined && { highlight: block.highlight }),
-    colorMode: opts.colorMode,
-    background: opts.background,
-    showSource: opts.showSource,
-    ...(block.sourceOpen ? { sourceOpen: true } : {}),
-    showCopy: opts.showCopy,
-    showExpand: opts.showExpand,
-    showOpenInEditor: opts.showOpenInEditor,
-    editorBaseUrl: opts.editorBaseUrl,
-    className: opts.className,
-    legacyClassNames: opts.legacyClassNames,
-    wrapper: opts.wrapper,
-  });
+  const bakeOptions = JSON.stringify(baked);
   const isReference = !!extra.dataAttributes?.['dgmo-ref'];
   if (extra.dataAttributes) {
     blockOptions.dataAttributes = {
@@ -143,9 +132,10 @@ export async function renderDgmoBlock(
   }
 
   const result = await renderStandardBlock(source, blockOptions);
-  if (!FOLD_TOGGLE.test(result.html)) return result;
+  if (!opts.fold || !FOLD_TOGGLE.test(result.html)) return result;
 
-  // A diagram a reader can fold (#1741). The client re-renders it in the page
+  // A diagram a reader can fold (#1741, opt-in via `fold`). The client
+  // (`client-fold.js`) re-renders it in the page
   // on a toggle, so the block has to carry what that re-render needs: the
   // options (already there on a reference) and the source. The copy button
   // already holds the source when there is one; a second copy would double the

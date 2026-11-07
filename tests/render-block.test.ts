@@ -190,23 +190,66 @@ poi Denver`;
 });
 
 describe('fold markers (#1741)', () => {
+  const MINDMAP = 'mindmap M\n\nA\n  B collapsed\n    C';
+
   it('a block with no fold toggle carries no fold attributes', async () => {
     const { html } = await renderDgmoBlock(SAMPLE, null, {
       colorMode: 'light',
+      fold: true,
     });
     expect(html).not.toContain('data-dgmo-fold-');
   });
 
-  it('a foldable reference block reuses its ref options', async () => {
+  it('fold off (the default): a foldable diagram keeps its bar and has no button', async () => {
+    const { html } = await renderDgmoBlock(MINDMAP, null, {
+      colorMode: 'light',
+    });
+    expect(html).not.toContain('data-dgmo-fold-');
+    expect(html).toContain('dgmo-collapse-bar"');
+    expect(html).toContain('data-node-toggle=');
+    expect(html).not.toContain('role="button"');
+    expect(html).not.toContain('aria-expanded');
+    expect(html).not.toContain('dgmo-collapse-bar-preview');
+    expect(html).not.toContain('{cursor:pointer}');
+  });
+
+  it('fold off: a reference replays interactiveFolds: false on refresh', async () => {
     const { html } = await renderDgmoBlock(
-      'mindmap M\n\nA\n  B collapsed\n    C',
+      MINDMAP,
       null,
       { colorMode: 'light' },
+      undefined,
+      { dataAttributes: { 'dgmo-ref': 'abc' } }
+    );
+    const raw = /data-dgmo-ref-opts="([^"]*)"/.exec(html)![1]!;
+    const opts = JSON.parse(raw.replace(/&quot;/g, '"')) as {
+      interactiveFolds?: boolean;
+    };
+    expect(opts.interactiveFolds).toBe(false);
+  });
+
+  it('fold on: the toggles are buttons and the block carries its fold data', async () => {
+    const { html } = await renderDgmoBlock(MINDMAP, null, {
+      colorMode: 'light',
+      fold: true,
+    });
+    expect(html).toContain('data-dgmo-fold-opts=');
+    expect(html).toContain('data-dgmo-fold-source=');
+    expect(html).toContain('role="button"');
+    expect(html).toContain('aria-expanded="false"');
+  });
+
+  it('fold on: a foldable reference block reuses its ref options', async () => {
+    const { html } = await renderDgmoBlock(
+      MINDMAP,
+      null,
+      { colorMode: 'light', fold: true },
       undefined,
       { dataAttributes: { 'dgmo-ref': 'abc' } }
     );
     expect(html).toContain('data-dgmo-ref-opts=');
     expect(html).not.toContain('data-dgmo-fold-opts=');
     expect(html).toContain('data-dgmo-fold-source=');
+    expect(html).not.toContain('interactiveFolds');
   });
 });

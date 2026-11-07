@@ -147,6 +147,22 @@ export interface DgmoOptions {
    * table is the part of this feature worth reading.
    */
   liveLink?: ReferenceOptions;
+
+  /**
+   * Let a reader fold and unfold a diagram in the page (#1741). Default:
+   * `false`.
+   *
+   * When `true`, a block whose diagram has fold toggles (mindmap, org,
+   * sitemap, groups, sections, notes) is rendered a second time carrying what
+   * the browser needs to redraw it, and its toggles are drawn as buttons with
+   * a hover cue. The page must also load `remark-dgmo/client-fold.js`; each
+   * wrapper does that for you when you pass `fold: true` to it.
+   *
+   * When `false`, the toggles carry no button markup, pointer cursor or hover
+   * cue, because a click would do nothing; a folded thing still shows its
+   * collapse bar. The site ships no fold code.
+   */
+  fold?: boolean;
 }
 
 export type ResolvedOptions = Required<
@@ -191,5 +207,6 @@ export function resolveOptions(opts: DgmoOptions = {}): ResolvedOptions {
     legacyClassNames: opts.legacyClassNames ?? [],
     mdx: opts.mdx ?? false,
     liveLink: resolveReferenceOptions(opts.liveLink),
+    fold: opts.fold ?? false,
   };
 }

@@ -213,8 +213,38 @@ remarkDgmo({
   // The plugin then emits an `mdxJsxFlowElement` instead of an `html` node,
   // so MDX accepts the output without "Cannot handle unknown node `raw`".
   mdx: false,
+
+  // Let a reader fold and unfold diagrams in the page. Default: false.
+  // See "Folding in the page" below.
+  fold: false,
 });
 ```
+
+### Folding in the page
+
+Mindmap, org, sitemap, group, section and note folds can be opened and closed
+by a reader. Off by default. Turn it on with `fold: true` and load the fold
+client next to the base one:
+
+```js
+import 'remark-dgmo/client.js';
+import 'remark-dgmo/client-fold.js'; // only with fold: true
+```
+
+Each wrapper (`astro-dgmo` and the others) loads it for you when you pass it
+`fold: true`. A click or Enter on a toggle draws that diagram again with the
+fold flipped. It is that reader's view only; nothing is saved.
+
+The cost lands on your build. The fold client loads dgmo's renderer on the
+first toggle use, so a reader who never folds downloads none of it, but a
+bundler emits the renderer's chunks into your output anyway. On the
+`astro-dgmo` fixture (2026-11-07): about 2 KB more eager JS gzipped, and the
+build writes 197 JS chunks instead of 3. A foldable block is also rendered
+twice at build time.
+
+With `fold` off, a diagram still shows its collapse bar where something is
+folded, but its toggles are drawn without a pointer cursor, hover cue or button
+role, because a click would do nothing.
 
 ## Per-block overrides
 
@@ -327,10 +357,6 @@ that can see the import ships it whether or not it is ever used. On this repo's
 own Astro fixture the difference is **1 chunk / 8.9 KB gzipped versus 88 chunks
 / 634 KB**. Lazy for your readers; not free for your `dist/`.
 
-Since folding in the page (below), `client.js` itself reaches the renderer
-lazily, so your `dist/` carries its chunks either way. The swap stays opt-in
-because it changes what a reader sees without the author rebuilding.
-
 If you want the swap anyway — a docs site that publishes far more often than it
 rebuilds is the case that wants it — opt in:
 
@@ -419,7 +445,7 @@ If your site has no dark mode at all, there is nothing to do: the dark wrapper s
 3. Each SVG is normalized: width/height stripped, `viewBox` added, inline background removed.
 4. The original `code` node is replaced with an `html` node carrying the rendered wrapper(s).
 5. The optional client script (`dist/client.js`) tightens viewBoxes and binds showcase-mode copy buttons.
-6. A diagram with fold toggles (mindmap, org, sitemap, groups, sections, notes) folds and unfolds in the page: the client script loads dgmo's renderer on the first click or Enter/Space on a toggle and draws that block again with the fold flipped. It is that reader's view only; nothing is saved. A page with no toggles never downloads the renderer, but a bundler emits its chunks into your build output, because the import is visible to it.
+6. With `fold: true` (below), a reader can fold and unfold a diagram in the page.
 
 Rendering happens at build time. The browser sees only the inline SVG and the small color-mode CSS.
 
