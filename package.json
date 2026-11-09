@@ -83,7 +83,7 @@
     "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
   },
   "peerDependencies": {
-    "@diagrammo/dgmo": ">=0.97.0 <1"
+    "@diagrammo/dgmo": ">=0.98.0 <1"
   },
   "dependencies": {
     "@lezer/common": "^1.5.1",
