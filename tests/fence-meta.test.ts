@@ -107,4 +107,12 @@ describe('parseFenceMeta', () => {
   it('rejects invalid colorMode= values', () => {
     expect(parseFenceMeta('colorMode=sepia')).toEqual({});
   });
+
+  it('reads highlight= as a per-block story view (#2042)', () => {
+    expect(parseFenceMeta('highlight="Royal Navy"')).toEqual({
+      highlight: 'Royal Navy',
+    });
+    expect(parseFenceMeta('highlight=none')).toEqual({ highlight: 'none' });
+    expect(parseFenceMeta('highlight=')).toEqual({});
+  });
 });

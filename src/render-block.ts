@@ -73,6 +73,8 @@ export async function renderDgmoBlock(
     mode: opts.mode,
     palette,
     ...(paletteOverride !== undefined && { paletteOverride }),
+    // A fence `highlight=` replaces the diagram's own line (#2042).
+    ...(block.highlight !== undefined && { highlight: block.highlight }),
     colorMode: opts.colorMode,
     background: opts.background,
     showSource: opts.showSource,
@@ -125,6 +127,9 @@ export async function renderDgmoBlock(
               mode: opts.mode,
               palette,
               ...(paletteOverride !== undefined && { paletteOverride }),
+              ...(block.highlight !== undefined && {
+                highlight: block.highlight,
+              }),
               colorMode: opts.colorMode,
               background: opts.background,
               showSource: opts.showSource,

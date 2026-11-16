@@ -227,17 +227,18 @@ A -> B
 ```
 ````
 
-| Token                                                   | Effect                              |
-| ------------------------------------------------------- | ----------------------------------- |
-| `diagram` / `showcase`                                  | Set `mode` for this block           |
-| `palette=<name>`                                        | Override palette, beats the file's  |
-| `theme=light` / `theme=dark` / `theme=transparent`      | Override theme (single-render only) |
-| `colorMode=auto` / `colorMode=light` / `colorMode=dark` | Override color-mode strategy        |
-| `title="…"`                                             | Add a caption (`<figcaption>`)      |
-| `source` / `noSource`                                   | Force source view + toggle on/off   |
-| `copy` / `noCopy`                                       | Force copy button on/off            |
-| `expand` / `noExpand`                                   | Force expand (full-screen) on/off   |
-| `openInEditor` / `noOpenInEditor`                       | Force editor link on/off            |
+| Token                                                   | Effect                                                                                                         |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `diagram` / `showcase`                                  | Set `mode` for this block                                                                                      |
+| `palette=<name>`                                        | Override palette, beats the file's                                                                             |
+| `highlight="<names>"` / `highlight=none`                | Story view for this block; replaces the file's `highlight` line, `none` clears it (needs dgmo with story view) |
+| `theme=light` / `theme=dark` / `theme=transparent`      | Override theme (single-render only)                                                                            |
+| `colorMode=auto` / `colorMode=light` / `colorMode=dark` | Override color-mode strategy                                                                                   |
+| `title="…"`                                             | Add a caption (`<figcaption>`)                                                                                 |
+| `source` / `noSource`                                   | Force source view + toggle on/off                                                                              |
+| `copy` / `noCopy`                                       | Force copy button on/off                                                                                       |
+| `expand` / `noExpand`                                   | Force expand (full-screen) on/off                                                                              |
+| `openInEditor` / `noOpenInEditor`                       | Force editor link on/off                                                                                       |
 
 Each toolbar button is independent — e.g. ` ```dgmo showcase noSource noExpand `
 keeps just the copy + open-in-editor buttons, and ` ```dgmo copy ` adds only a

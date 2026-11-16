@@ -22,6 +22,8 @@ export interface BlockOptions {
   showExpand?: boolean;
   showOpenInEditor?: boolean;
   title?: string;
+  /** `highlight="EMEA"` — story view for this block only (#2042). */
+  highlight?: string;
 }
 
 const BARE_FLAGS: Record<string, Partial<BlockOptions>> = {
@@ -74,6 +76,9 @@ export function parseFenceMeta(meta: string | null | undefined): BlockOptions {
     switch (key) {
       case 'palette':
         if (val) out.palette = val;
+        break;
+      case 'highlight':
+        if (val) out.highlight = val;
         break;
       case 'theme':
         if (VALID_THEMES.has(val as Theme)) out.theme = val as Theme;
