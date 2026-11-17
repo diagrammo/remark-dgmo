@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.17.4
+
+- **`highlight=` on a fence sets that block's story view.** It replaces the
+  diagram's own `highlight` line for that one block, and `highlight=none`
+  clears it. Needs a dgmo with story view (0.99.0); an older dgmo ignores it.
+
 ## 0.17.2
 
 - **Copy a diagram as an image.** The toolbar's picture button puts the
